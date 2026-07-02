@@ -1,44 +1,45 @@
 import asyncio
 from logging.config import fileConfig
 from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
-# type: ignore tells the IDE to trust that alembic has this module at runtime
-from alembic import context  # type: ignore
-
+from alembic import context
 from app.config import settings
-from app.database import Base
-import app.models.finance  # noqa: F401
+from app.models.finance import Base  # Ensure this contains all your Table definitions
 
+# Interpret the config file for Python logging
 config = context.config
-
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Set the target metadata for autogenerate support
 target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode."""
+    url = settings.DATABASE_URL
     context.configure(
-        url=settings.DATABASE_URL,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
 def do_run_migrations(connection):
+    """Callback to run migrations using an active connection."""
     context.configure(connection=connection, target_metadata=target_metadata)
-    with connection.begin_transaction():
+    with context.begin_transaction():
         context.run_migrations()
 
 async def run_migrations_online() -> None:
-    configuration = config.get_section(config.config_dict)
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
-
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
+    """Run migrations in 'online' mode."""
+    # Create the engine directly using the URL from your app settings
+    # If using SecretStr, use settings.DATABASE_URL.get_secret_value()
+    connectable = create_async_engine(
+        settings.DATABASE_URL,
         poolclass=pool.NullPool,
     )
 
@@ -52,6 +53,10 @@ if context.is_offline_mode():
 else:
     asyncio.run(run_migrations_online())
 
-# docker migrations 
-# docker compose exec risk-db psql -U postgres -d risk_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
-# alembic upgrade head ( auto update )
+# Initialize: Run alembic init alembic once to get the folder structure.
+
+# Configure: Edit env.py to connect it to your settings.DATABASE_URL.
+
+# Generate: Whenever you change your database models, run alembic revision --autogenerate to let Alembic write the migration script for you.
+
+# Apply: Run alembic upgrade head to apply those changes to your actual database

@@ -1,22 +1,22 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
-from langchain.agents.middleware import SummarizationMiddleware, HumanInTheLoopMiddleware
 from langgraph.checkpoint.memory import InMemorySaver
-
 from app.config import settings
 from app.agents.tools import (
+    analyze_bond_tool,
+    get_asset_valuation,
     climate_value_at_risk_tool,
     green_compliance_verification_tool,
-    actuarial_expected_loss_tool
+    actuarial_expected_loss_tool,
+    generate_hedging_strategy_tool
 )
 
-# Global in-memory checkpoint saver to maintain threads across API requests
+# Global in-memory checkpoint saver
 agent_memory_bank = InMemorySaver()
 
 def get_financial_risk_agent():
     """
-    Compiles a stateful LangChain agent packed with automated memory 
-    management and human-in-the-loop safety rails.
+    Compiles a stateful agent using the v1.0+ factory pattern.
     """
     llm = ChatGoogleGenerativeAI(
         model=settings.GEMINI_MODEL_ID,
@@ -25,32 +25,29 @@ def get_financial_risk_agent():
     )
     
     tools = [
+        analyze_bond_tool,
+        get_asset_valuation,
         climate_value_at_risk_tool,
         green_compliance_verification_tool,
-        actuarial_expected_loss_tool
+        actuarial_expected_loss_tool,
+        generate_hedging_strategy_tool
     ]
     
-    # Define our behavioral middleware hooks
-    middleware_pipeline = [
-        # 1. Automatically compresses long conversation strings when token limits near
-        SummarizationMiddleware(model=llm),
-        
-        # 2. Automatically pauses the agent if it attempts to execute a heavy pricing calculation
-        HumanInTheLoopMiddleware(
-            interrupt_on={"actuarial_expected_loss_tool": True}
-        )
-    ]
-    
-    # Compile the complete harness
+    # 1. Define the system prompt directly as a string. 
+    # 2. Note: Modern create_agent infers the agent type from the tools/model.
+    system_prompt = (
+        "You are an institutional quantitative risk officer specializing in green bonds, climate risk, credit underwriting and portfolio risk. "
+        "CRITICAL: Always check your conversation history for 'Compliance Audit Results' before "
+        "asking the user for data. If audit results exist in your history, use them immediately "
+        "to answer the user's questions about risk mitigation and environmental strategy."
+    )
+
+    # 3. Use the simplified factory pattern
     agent = create_agent(
         model=llm,
         tools=tools,
-        middleware=middleware_pipeline,
-        checkpointer=agent_memory_bank, # Links our conversational persistence engine
-        system_prompt=(
-            "You are an expert institutional quantitative risk officer and green finance auditor. "
-            "Evaluate assets using your available tools and provide explicit risk summaries."
-        )
+        system_prompt=system_prompt,
+        checkpointer=agent_memory_bank
     )
     
     return agent

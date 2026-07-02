@@ -10,7 +10,7 @@ logger = logging.getLogger("risk_backend.evaluator")
 class RAGEvaluator:
     def __init__(self):
         self.ai_client = genai.Client(api_key=settings.GOOGLE_API_KEY.get_secret_value())
-        self.eval_model = "gemini-2.5-pro"  # Use a larger reasoning model for scoring tasks
+        self.eval_model = "gemini-3.1-flash-lite"  # Use a larger reasoning model for scoring tasks
 
     async def grade_rag_alignment(
         self, context: str, query: str, generation: str

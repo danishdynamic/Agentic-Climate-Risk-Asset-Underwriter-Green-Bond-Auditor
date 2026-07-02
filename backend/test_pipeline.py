@@ -53,7 +53,7 @@ async def run_integration_pipeline():
         logger.info(f"Asset successfully logged with primary surrogate ID: {test_bond.id}")
 
         # 3. Test Ingestion and pgvector Embedding Matrix Generation
-        logger.info("Launching chunking pipeline and calling Gemini text-embedding-004...")
+        logger.info("Launching chunking pipeline and calling Gemini gemini-embedding-2...")
         chunks_indexed = await ingestion_service.process_and_vectorize_asset(
             db=db, 
             bond_id=test_bond.id, 

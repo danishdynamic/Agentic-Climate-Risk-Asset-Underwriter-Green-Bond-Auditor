@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     GOOGLE_API_KEY: SecretStr
-    GEMINI_MODEL_ID: str = "gemini-2.5-flash-lite"
+    GEMINI_MODEL_ID: str = "gemini-3.1-flash-lite"
 
     GEMINI_MAX_RPM: int = 15
     GEMINI_PEAK_TPM_INPUT: int = 3860

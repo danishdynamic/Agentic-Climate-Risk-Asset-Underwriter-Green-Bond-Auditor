@@ -16,7 +16,7 @@ class RetrieverService:
         # Resolve client orchestration via official GenAI SDK mapping
         self.ai_client = genai.Client(api_key=settings.GOOGLE_API_KEY.get_secret_value())
         self.generation_model = settings.GEMINI_MODEL_ID
-        self.embedding_model = "text-embedding-004"
+        self.embedding_model = "gemini-embedding-2"
 
     async def translate_query(self, user_query: str) -> Tuple[str, Dict[str, Any]]:
         """
@@ -51,7 +51,7 @@ class RetrieverService:
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    temperature=0.1
+                    temperature=0.0
                 )
             )
             
@@ -75,13 +75,15 @@ class RetrieverService:
         semantic_query, filters = await self.translate_query(user_query)
         logger.info(f"Retriever Target Map -> Semantic: '{semantic_query}' | Extracted Filters: {filters}")
 
-        # 2. Vectorize Search String via text-embedding-004
+        # 2. Vectorize Search String via gemini-embedding-2
         estimated_tokens = len(semantic_query) // 4
+
         await quota_manager.acquire_quota(estimated_tokens=estimated_tokens)
         
         embed_response = self.ai_client.models.embed_content(
             model=self.embedding_model,
-            contents=semantic_query
+            contents=semantic_query,
+            config=types.EmbedContentConfig(output_dimensionality=768)
         )
         query_vector = embed_response.embeddings[0].values if embed_response.embeddings else []
 
@@ -97,8 +99,8 @@ class RetrieverService:
                 b.coupon_rate,
                 (ac.embedding <=> CAST(:query_vector AS vector)) as distance
             FROM asset_chunks ac
-            JOIN bond_assets b ON ac.bond_id = b.id
-            WHERE 1=1
+            JOIN bonds b ON ac.bond_id = b.id
+            WHERE TRUE
         """
         
         params: Dict[str, Any] = {"query_vector": str(query_vector)}

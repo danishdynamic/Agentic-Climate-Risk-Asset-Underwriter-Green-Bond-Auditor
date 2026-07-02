@@ -1,8 +1,8 @@
-version: '4.78'
 
 services:
+  # Database Service
   risk-db:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg17
     container_name: risk_analytics_db_instance
     restart: always
     environment:
@@ -13,11 +13,39 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d risk_db"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # FastAPI Backend Service
+  backend:
+    build: ./backend
+    container_name: risk_backend_engine
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:secure_risk_pass@risk-db:5432/risk_db
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      risk-db:
+        condition: service_healthy
+
+  # Next.js Frontend Service
+  frontend:
+    build: ./frontend
+    container_name: risk_frontend_app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app           
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
 
 volumes:
   pgdata:

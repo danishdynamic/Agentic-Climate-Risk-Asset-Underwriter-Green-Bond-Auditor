@@ -1,13 +1,27 @@
 from typing import Dict, Any, List
+from .credit_rating import CreditRating
 
 def verify_green_bond_compliance(
     bond_type: str, 
     coupon_rate: float, 
-    documented_milestones: List[str]
+    documented_milestones: List[str],
+    credit_rating: str  # Now accepting the string rating
 ) -> Dict[str, Any]:
     """
-    Executes a deterministic compliance checklist gate for Green Bond alignment.
+    Executes a deterministic compliance checklist gate for Green Bond alignment,
+    adjusted by issuer credit risk.
     """
+    
+    # Define ratings that require enhanced scrutiny (Speculative/Junk)
+    # Using the CreditRating helper for clean identification
+    speculative_grades = {
+        CreditRating.BB_PLUS, CreditRating.BB, CreditRating.BB_MINUS,
+        CreditRating.B_PLUS, CreditRating.B, CreditRating.B_MINUS,
+        CreditRating.CCC, CreditRating.CC, CreditRating.C, CreditRating.D
+    }
+    
+    is_speculative = credit_rating in [r.value for r in speculative_grades]
+    
     mandatory_keywords = ["carbon", "emission", "climate", "renewable", "sustainability", "efficiency"]
     matched_milestones = []
     
@@ -16,11 +30,15 @@ def verify_green_bond_compliance(
         if any(keyword in milestone.lower() for keyword in mandatory_keywords):
             matched_milestones.append(milestone)
             
-    # Business logic rules
-    is_aligned = len(matched_milestones) >= 2 and bond_type.upper() in ["CORPORATE", "SOVEREIGN"]
+    # Business logic rules: 
+    # Stricter compliance bar (3 milestones) if the issuer is speculative
+    required_milestones = 3 if is_speculative else 2
     
-    # Flag risky structural features (e.g., exceptionally high coupon junk bonds masquerading as green)
-    risk_signal = "HIGH_YIELD_SCRUTINY" if coupon_rate > 0.08 else "STANDARD"
+    is_aligned = len(matched_milestones) >= required_milestones and bond_type.upper() in ["CORPORATE", "SOVEREIGN"]
+    
+    # Flag risky structural features
+    # Enhanced scrutiny for speculative issuers or exceptionally high coupons
+    risk_signal = "ENHANCED_SCRUTINY" if (coupon_rate > 0.08 or is_speculative) else "STANDARD"
     
     return {
         "framework_alignment_status": "COMPLIANT" if is_aligned else "NON_COMPLIANT",

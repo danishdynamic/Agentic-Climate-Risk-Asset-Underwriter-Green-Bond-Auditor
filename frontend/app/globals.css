@@ -116,6 +116,12 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@media print {
+  .print-header { display: block; }
+  /* Ensure the background colors show in PDF */
+  .bg-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
