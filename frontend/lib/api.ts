@@ -1,5 +1,5 @@
 import { HealthStatus
-         , AssetSearchQuery, UnderwriteInput, AgentQueryInput } from "@/lib/types";
+         , AssetSearchQuery, UnderwriteInput, AgentQueryInput, AssetSummary } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -8,7 +8,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 export const api = {
   
   // 1. System Health Check
-  async getHealth(): Promise<HealthStatus> {
+  async getHealthStatus(): Promise<HealthStatus> {
         const res = await fetch(`${API_BASE_URL}/health`, { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to fetch backend health status");
         return res.json();
@@ -134,7 +134,7 @@ async analyzeBond(bond_isin: string, credit_rating: string) {
     },
 
   // lib/api.ts
-async getAssets(): Promise<string[]> {
+async getAssets(): Promise<AssetSummary[]>{
     const res = await fetch(`${API_BASE_URL}/api/v1/agent/assets`);
     if (!res.ok) throw new Error("Failed to fetch assets");
     const data = await res.json();

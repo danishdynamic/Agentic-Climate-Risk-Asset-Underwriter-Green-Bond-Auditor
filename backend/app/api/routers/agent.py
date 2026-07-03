@@ -19,6 +19,7 @@ from sqlalchemy.orm import joinedload
 from app.services.bond_analysis_service import bond_analysis_service
 from ...tools.credit_rating import CreditRating
 from app.services.risk_engine import risk_engine_service
+from app.api.schemas.assets import AssetSummary
 
 
 
@@ -105,10 +106,31 @@ async def generate_and_save_hedge(bond_id: int, db: AsyncSession = Depends(get_d
 @router.get("/assets", status_code=status.HTTP_200_OK)
 async def get_assets():
     async with async_session_maker() as session:
-        stmt = select(Bond.isin)
+        # 1. Fetch full Bond objects instead of just the ISIN
+        stmt = select(Bond)
         result = await session.execute(stmt)
-        return {"assets": result.scalars().all()}
-
+        
+        # 2. Extract the list of Bond objects from the result
+        bonds = result.scalars().all()
+        
+        # 3. Map bonds to AssetSummary objects
+        assets = [
+            AssetSummary(
+                id=bond.id, 
+                isin=bond.isin,
+                asset_name=bond.asset_name,
+                bond_type=bond.bond_type.value
+                    if hasattr(bond.bond_type, "value")
+                    else bond.bond_type,
+                credit_rating=bond.credit_rating,
+                coupon_rate=float(bond.coupon_rate),
+            )
+            for bond in bonds
+        ]
+        
+        return {
+            "assets": assets
+        }
 
 @router.get("/tools")
 async def list_agent_tools():
