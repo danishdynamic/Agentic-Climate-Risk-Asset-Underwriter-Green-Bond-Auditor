@@ -3,31 +3,61 @@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAppStore } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 export function Topbar() {
-  // Read state from your Zustand store
-  const { selectedAsset, sessionId, auditStatus } = useAppStore((state) => ({
-    selectedAsset: state.activeAssetId || "NONE SELECTED",
-    sessionId: state.sessionId || "NO SESSION",
-    auditStatus: state.auditStatus || "IDLE"
+  const { selectedBond, sessionId, auditStatus, hedgingStatus } = useAppStore((state) => ({
+    selectedBond: state.selectedBond, 
+    sessionId: state.sessionId || "N/A",
+    auditStatus: state.auditStatus || "IDLE",   
+    hedgingStatus: state.hedgingStatus || "IDLE" 
   }));
 
   return (
-    <header className="h-12 border-b flex items-center px-6 gap-6 bg-background">
-      <div className="text-[10px] uppercase tracking-widest font-bold">Selected Asset</div>
-      <div className="font-mono text-xs bg-muted px-2 py-1 border">{selectedAsset}</div>
+    <header className="h-14 border-b flex items-center px-8 gap-8 bg-background">
+      {/* Asset Context */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold uppercase text-muted-foreground">Asset</span>
+        {selectedBond ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold">{selectedBond.asset_name}</span>
+            <Badge variant="outline" className="text-[10px]">{selectedBond.credit_rating}</Badge>
+            <span className="font-mono text-xs text-muted-foreground">({selectedBond.isin})</span>
+          </div>
+        ) : (
+          <span className="text-xs italic text-muted-foreground">No Bond Selected</span>
+        )}
+      </div>
       
       <Separator orientation="vertical" className="h-4" />
       
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Session: {sessionId.slice(0, 8)}...</div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">
+        Session: <span className="font-mono">{sessionId.slice(0, 8)}</span>
+      </div>
       
       <div className="flex-1" />
       
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] uppercase">Audit</span>
-        <Badge variant={auditStatus === 'READY' ? 'default' : 'secondary'} className="rounded-none">
-          {auditStatus}
-        </Badge>
+      {/* Workflow Statuses */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase">Audit</span>
+          <Badge className={cn("rounded-none", 
+            auditStatus === 'COMPLETED' ? 'bg-emerald-600' : 
+            auditStatus === 'RUNNING' ? 'bg-amber-500' : 
+            auditStatus === 'FAILED' ? 'bg-red-600' : 'bg-muted-foreground'
+          )}>
+            {auditStatus}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase">Hedging</span>
+          <Badge className={cn("rounded-none", 
+            hedgingStatus === 'COMPLETED' ? 'bg-emerald-600' : 
+            hedgingStatus === 'FAILED' ? 'bg-red-600' : 'bg-muted-foreground'
+          )}>
+            {hedgingStatus}
+          </Badge>
+        </div>
       </div>
     </header>
   );

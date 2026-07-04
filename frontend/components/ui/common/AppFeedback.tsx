@@ -9,25 +9,32 @@ export interface AppFeedbackProps {
   isLoading: boolean;
   error: string | null;
   isEmpty?: boolean;
+  emptyMessage?: string;
+  emptyIcon?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function AppFeedback({ isLoading, error, isEmpty = false, children }: AppFeedbackProps) {
+export function AppFeedback({ 
+  isLoading, 
+  error, 
+  isEmpty = false, 
+  emptyMessage = "No Data Available",
+  emptyIcon = <Inbox className="h-8 w-8 opacity-50" />,
+  children 
+}: AppFeedbackProps) {
   
-  // 1. Loading State
   if (isLoading) {
     return (
       <div className="flex h-64 w-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="text-xs uppercase tracking-widest font-medium">Loading Data...</span>
+        <span className="text-xs uppercase tracking-widest font-medium">Loading...</span>
       </div>
     );
   }
 
-  // 2. Error State
   if (error) {
     return (
-      <Alert variant="destructive" className="rounded-none border-red-200 bg-red-50/50">
+      <Alert variant="destructive" className="rounded-md border-red-200 bg-red-50/50">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle className="text-xs font-bold uppercase">System Error</AlertTitle>
         <AlertDescription className="text-xs">{error}</AlertDescription>
@@ -35,16 +42,14 @@ export function AppFeedback({ isLoading, error, isEmpty = false, children }: App
     );
   }
 
-  // 3. Empty State
   if (isEmpty) {
     return (
-      <Card className="flex h-64 w-full flex-col items-center justify-center gap-3 rounded-none border-dashed bg-muted/20 text-muted-foreground">
-        <Inbox className="h-8 w-8 opacity-50" />
-        <span className="text-sm font-medium uppercase tracking-wider">No Data Available</span>
+      <Card className="flex h-64 w-full flex-col items-center justify-center gap-3 border-dashed bg-muted/20 text-muted-foreground p-6 text-center">
+        {emptyIcon}
+        <span className="text-sm font-medium uppercase tracking-wider">{emptyMessage}</span>
       </Card>
     );
   }
 
-  // 4. Default / Success State
   return <>{children}</>;
 }

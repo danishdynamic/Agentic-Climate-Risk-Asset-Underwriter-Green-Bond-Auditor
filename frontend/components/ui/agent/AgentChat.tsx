@@ -1,62 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AppFeedback } from '@/components/common/AppFeedback';
-import { useAgent } from '@/hooks/useAgent';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { Send, Terminal, User, Bot } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { useAppStore } from '@/lib/store';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function AgentChat() {
-  const [input, setInput] = useState('');
-  const { messages, sendMessage, isLoading, error } = useAgent();
+  const messages = useAppStore((state) => state.agentMessages);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    await sendMessage(input);
-    setInput('');
-  };
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-none bg-background">
-      {/* 1. Chat Window */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <AppFeedback isLoading={false} error={error} isEmpty={messages.length === 0}>
-          {messages.map((msg, idx) => (
-            <div key={idx} className={cn("flex gap-4", msg.role === 'user' ? "justify-end" : "justify-start")}>
-              {msg.role === 'assistant' && <Bot className="h-5 w-5 mt-1 text-muted-foreground" />}
-              <div className={cn(
-                "max-w-[80%] p-4 text-sm font-mono border",
-                msg.role === 'user' ? "bg-muted/30 border-muted" : "bg-background border-muted"
-              )}>
-                {msg.content}
-              </div>
-              {msg.role === 'user' && <User className="h-5 w-5 mt-1 text-muted-foreground" />}
+    <Card className="flex flex-col h-[500px] border-0 shadow-sm">
+      <CardHeader className="border-b py-3">
+        <CardTitle className="text-sm uppercase tracking-widest">AI Risk Agent</CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-hidden p-0">
+        <ScrollArea className="h-full p-4">
+          {messages.length === 0 ? (
+            <div className="text-xs text-muted-foreground space-y-4 pt-4">
+              <p>🤖 <strong>Climate Risk Agent</strong></p>
+              <p>You can ask me:</p>
+              <ul className="space-y-1 list-disc pl-4">
+                <li>Analyze bond US12345</li>
+                <li>Explain Climate VaR</li>
+                <li>Generate a hedging strategy</li>
+                <li>Review ESG compliance</li>
+              </ul>
             </div>
-          ))}
-        </AppFeedback>
-      </div>
-
-      {/* 2. Chat Input Console */}
-      <div className="border-t p-4 bg-muted/10">
-        <div className="flex gap-2">
-          <Textarea 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your risk analysis command..." 
-            className="rounded-none resize-none h-12 text-xs border-muted-foreground/30 focus-visible:ring-0"
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          />
-          <Button 
-            onClick={handleSend}
-            disabled={isLoading}
-            className="rounded-none h-12 px-6 uppercase text-[10px] tracking-widest"
-          >
-            {isLoading ? <Terminal className="animate-spin h-4 w-4" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
-    </div>
+          ) : (
+            <div className="space-y-6">
+              {messages.map((msg, i) => (
+                <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                  {msg.role === 'assistant' && (
+                    <Avatar className="h-8 w-8"><AvatarFallback>AI</AvatarFallback></Avatar>
+                  )}
+                  <div className={`rounded-xl px-4 py-3 text-sm leading-relaxed max-w-[85%] whitespace-pre-wrap ${
+                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  }`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

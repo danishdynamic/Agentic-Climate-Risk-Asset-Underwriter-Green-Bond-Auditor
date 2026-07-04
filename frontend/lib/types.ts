@@ -26,6 +26,7 @@ export interface AgentQueryInput {
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  timestamp: string;
 }
 
 // Audit Result Structure
@@ -46,11 +47,14 @@ export interface HedgingStrategy {
 
 // Search Result Structure
 export interface SearchResult {
-  id: string;
-  title: string;
-  description: string;
-  type: 'asset' | 'bond' | 'document';
-  relevanceScore: number;
+  id: number;
+  assetName: string;      
+  snippet: string;        
+  bondType: string;      
+  score: number;          
+  rating: string;         
+  isin: string;           
+  couponRate?: number;
 }
 
 // Asset Summary for Dashboards

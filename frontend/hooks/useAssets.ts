@@ -9,8 +9,8 @@ export function useAssets() {
   // Access global state and actions
   const { assets, isLoading, error } = useAppStore((state) => ({
     assets: state.assets,
-    isLoading: state.loading.agent, // Or a dedicated 'assets' loading key
-    error: state.errors.agent,      // Or a dedicated 'assets' error key
+    isLoading: state.loading.agent, 
+    error: state.errors.agent,
   }));
 
   const { setAssets, setLoading, setError } = useAppStore();

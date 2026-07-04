@@ -7,7 +7,7 @@ export function useDashboard() {
   const { health, assets, isLoading, error } = useAppStore((state) => ({
     health: state.healthStatus,
     assets: state.assets,
-    isLoading: state.loading.agent, // Or a dedicated 'dashboard' loading key
+    isLoading: state.loading.agent, 
     error: state.errors.agent,
   }));
 
