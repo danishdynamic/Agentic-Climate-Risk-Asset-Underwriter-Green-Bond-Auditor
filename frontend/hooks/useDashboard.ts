@@ -4,14 +4,15 @@ import { useAppStore } from '@/lib/store';
 import { api } from '@/lib/api';
 
 export function useDashboard() {
-  const { health, assets, isLoading, error } = useAppStore((state) => ({
-    health: state.healthStatus,
-    assets: state.assets,
-    isLoading: state.loading.agent, 
-    error: state.errors.agent,
-  }));
+  const health = useAppStore((state) => state.healthStatus);
+  const assets = useAppStore((state) => state.assets);
+  const isLoading = useAppStore((state) => state.loading.agent); 
+  const error = useAppStore((state) => state.errors.agent);
 
-  const { setHealthStatus, setAssets, setLoading, setError } = useAppStore();
+  const setHealthStatus = useAppStore((state) => state.setHealthStatus);
+  const setAssets = useAppStore((state) => state.setAssets);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const fetchDashboardData = async () => {
     setLoading('agent', true);

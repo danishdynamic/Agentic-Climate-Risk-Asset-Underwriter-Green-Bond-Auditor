@@ -5,13 +5,14 @@ import { useAppStore } from '@/lib/store';
 import { AssetSearchQuery } from '@/lib/types';
 
 export function useSearch() {
-  const { results, isLoading, error } = useAppStore((state) => ({
-    results: state.searchResults,
-    isLoading: state.loading.search,
-    error: state.errors.search,
-  }));
+  const results = useAppStore((state) => state.searchResults);
+  const isLoading = useAppStore((state) => state.loading.search);
+  const error = useAppStore((state) => state.errors.search);
 
-  const { setSearchResults, setLoading, setError } = useAppStore();
+  // Consume actions from store using explicit individual selectors
+  const setSearchResults = useAppStore((state) => state.setSearchResults);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const searchAssets = async (query: string, limit: number = 5) => {
     setLoading('search', true);

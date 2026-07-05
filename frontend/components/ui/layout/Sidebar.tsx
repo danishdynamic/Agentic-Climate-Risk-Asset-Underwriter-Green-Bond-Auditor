@@ -15,7 +15,8 @@ import {
   Bot, 
   Shield, 
   Cpu, 
-  Database 
+  Database ,
+  Settings
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -31,6 +32,7 @@ export function Sidebar() {
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Portfolio Hedging', href: '/hedging', icon: ShieldCheck },
     { name: 'AI Risk Agent', href: '/agent', icon: Bot },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (

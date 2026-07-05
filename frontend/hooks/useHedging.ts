@@ -5,15 +5,14 @@ import { useAppStore } from '@/lib/store';
 import { HedgingStrategy } from '@/lib/types';
 
 export function useHedging() {
-  // 1. Consume state from store
-  const { hedgingResult, isLoading, error } = useAppStore((state) => ({
-    hedgingResult: state.hedgingResult,
-    isLoading: state.loading.hedging,
-    error: state.errors.hedging,
-  }));
+  const hedgingResult = useAppStore((state) => state.hedgingResult);
+  const isLoading = useAppStore((state) => state.loading.hedging);
+  const error = useAppStore((state) => state.errors.hedging);
 
-  // 2. Consume actions from store
-  const { setHedgingResult, setLoading, setError } = useAppStore();
+  // Consume actions from store with explicit selectors
+  const setHedgingResult = useAppStore((state) => state.setHedgingResult);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const calculateHedging = async (bondId: number) => {
     // Use 'hedging' key explicitly to satisfy the type definition
@@ -29,7 +28,6 @@ export function useHedging() {
       return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Hedging calculation failed';
-      // Use 'hedging' key here as well
       setError('hedging', message);
       throw err;
     } finally {

@@ -4,7 +4,7 @@ import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-export function TradeParametersTable() {
+export function GreeksTable() {
   const hedgingResult = useAppStore((state) => state.hedgingResult);
 
   if (!hedgingResult) return null;

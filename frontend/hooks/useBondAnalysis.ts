@@ -5,14 +5,13 @@ import { useAppStore } from '@/lib/store';
 import { BondAnalysis } from '@/lib/types';
 
 export function useBondAnalysis() {
-  // Pulling specific state and loading/error slices
-  const { analysis, isLoading, error } = useAppStore((state) => ({
-    analysis: state.bondAnalysis,
-    isLoading: state.loading.audit, // Assuming bond analysis fits under audit/analysis
-    error: state.errors.audit,
-  }));
+  const analysis = useAppStore((state) => state.bondAnalysis);
+  const isLoading = useAppStore((state) => state.loading.audit);
+  const error = useAppStore((state) => state.errors.audit);
 
-  const { setBondAnalysis, setLoading, setError } = useAppStore();
+  const setBondAnalysis = useAppStore((state) => state.setBondAnalysis);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   /**
    * Standardized signature: Accepts ISIN and Rating

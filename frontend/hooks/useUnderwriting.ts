@@ -5,17 +5,16 @@ import { useAppStore } from '@/lib/store';
 import { UnderwriteInput, AuditResult } from '@/lib/types';
 
 export function useUnderwriting() {
-  // 1. Consume loading/error from the global store using 'audit' key
-  const { isLoading, error } = useAppStore((state) => ({
-    isLoading: state.loading.audit,
-    error: state.errors.audit,
-  }));
+  const isLoading = useAppStore((state) => state.loading.audit);
+  const error = useAppStore((state) => state.errors.audit);
 
-  // 2. Consume actions from the store
-  const { setAuditResult, setLoading, setError } = useAppStore();
+  // Consume actions from the store with explicit individual selectors
+  const setAuditResult = useAppStore((state) => state.setAuditResult);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const executeUnderwriting = async (isin: string, instruction: string) => {
-    // 3. Explicitly use the 'audit' key to satisfy the strict union type
+    // Explicitly use the 'audit' key to satisfy the strict union type
     setLoading('audit', true);
     setError('audit', undefined);
 

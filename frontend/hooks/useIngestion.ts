@@ -4,17 +4,15 @@ import { api } from '@/lib/api';
 import { useAppStore } from '@/lib/store';
 
 export function useIngestion() {
-  // 1. Consume loading and error state from the store using the 'upload' key
-  const { isLoading, error } = useAppStore((state) => ({
-    isLoading: state.loading.upload,
-    error: state.errors.upload,
-  }));
+  const isLoading = useAppStore((state) => state.loading.upload);
+  const error = useAppStore((state) => state.errors.upload);
 
-  // 2. Consume setters from the store
-  const { setLoading, setError } = useAppStore();
+  // Consume setters from the store with explicit selectors
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const ingestAsset = async (formData: FormData) => {
-    // 3. Use the explicit 'upload' key to satisfy the strict TypeScript union
+    // Use the explicit 'upload' key to satisfy the strict TypeScript union
     setLoading('upload', true);
     setError('upload', undefined);
 

@@ -3,15 +3,12 @@
 import { useAppStore } from '@/lib/store';
 
 export function useAudit() {
-  // 1. Consume granular state from the store
-  const { auditResult, isLoading, error } = useAppStore((state) => ({
-    auditResult: state.auditResult,
-    isLoading: state.loading.audit, 
-    error: state.errors.audit,      
-  }));
+  const auditResult = useAppStore((state) => state.auditResult);
+  const isLoading = useAppStore((state) => state.loading.audit); 
+  const error = useAppStore((state) => state.errors.audit);      
 
-  // 2. Consume actions
-  const { setAuditResult } = useAppStore();
+  // Granular action ingestion
+  const setAuditResult = useAppStore((state) => state.setAuditResult);
 
   const clearAudit = () => {
     setAuditResult(null);

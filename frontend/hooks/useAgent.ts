@@ -5,24 +5,29 @@ import { useAppStore } from '@/lib/store';
 import { AgentQueryInput, ChatMessage } from '@/lib/types';
 
 export function useAgent() {
-  // Select only the specific slices needed
-  const { messages, threadId, isLoading, error } = useAppStore((state) => ({
-    messages: state.agentMessages,
-    threadId: state.threadId,
-    isLoading: state.loading.agent,
-    error: state.errors.agent,
-  }));
+  const messages = useAppStore((state) => state.agentMessages);
+  const threadId = useAppStore((state) => state.threadId);
+  const isLoading = useAppStore((state) => state.loading.agent);
+  const error = useAppStore((state) => state.errors.agent);
 
-  const { setAgentMessages, setLoading, setError } = useAppStore();
+  const setAgentMessages = useAppStore((state) => state.setAgentMessages);
+  const setLoading = useAppStore((state) => state.setLoading);
+  const setError = useAppStore((state) => state.setError);
 
   const queryAgent = async (userQuery: string) => {
     try {
       setLoading('agent', true);
       setError('agent', undefined);
 
-      // Add user message to UI immediately
-      const userMessage: ChatMessage = { role: 'user', content: userQuery };
-      setAgentMessages([...messages, userMessage]);
+      // Construct and inject user's prompt frame instantaneously
+      const userMessage: ChatMessage = { 
+        role: 'user', 
+        content: userQuery, 
+        timestamp: new Date().toISOString() 
+      };
+      
+      const currentMessages = useAppStore.getState().agentMessages;
+      setAgentMessages([...currentMessages, userMessage]);
 
       const data: AgentQueryInput = {
         user_query: userQuery,
@@ -31,9 +36,15 @@ export function useAgent() {
 
       const response = await api.queryRiskAgent(data);
       
-      // Add assistant response to UI
-      const assistantMessage: ChatMessage = { role: 'assistant', content: response };
-      setAgentMessages([...messages, userMessage, assistantMessage]);
+      // Inject assistant stream payload into the chronological conversation tracking slice
+      const assistantMessage: ChatMessage = { 
+        role: 'assistant', 
+        content: response, 
+        timestamp: new Date().toISOString()
+      };
+      
+      const updatedMessages = useAppStore.getState().agentMessages;
+      setAgentMessages([...updatedMessages, assistantMessage]);
       
       return response;
     } catch (err) {
