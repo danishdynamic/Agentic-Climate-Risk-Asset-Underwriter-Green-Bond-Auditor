@@ -4,8 +4,10 @@ import functools
 from typing import Any, Callable, Dict, Optional, TypeVar
 from pydantic import BaseModel, Field
 from langchain_core.messages import BaseMessage
+import logging
 
 F = TypeVar("F", bound=Callable[..., Any])
+logger = logging.getLogger("risk_backend.metrics")
 
 class LLMUsageMetrics(BaseModel):
     """Container for tracking token spend and LLM performance."""
@@ -14,11 +16,6 @@ class LLMUsageMetrics(BaseModel):
     total_tokens: int = Field(default=0, description="Aggregated token footprint")
     execution_latency_sec: float = Field(default=0.0, description="Time taken for the API roundtrip")
 
-class RAGEvaluationMetrics(BaseModel):
-    """Tracks precision and grounding benchmarks across RAG pipeline cycles."""
-    faithfulness_score: float = Field(..., ge=0.0, le=1.0)
-    context_relevance_score: float = Field(..., ge=0.0, le=1.0)
-    answer_relevance_score: float = Field(..., ge=0.0, le=1.0)
 
 def track_execution_latency(metric_name: str) -> Callable[[F], F]:
     """
@@ -33,8 +30,7 @@ def track_execution_latency(metric_name: str) -> Callable[[F], F]:
                 return func(*args, **kwargs)
             finally:
                 elapsed = time.perf_counter() - start_time
-                # Replace with your app logger or Prometheus counter hook:
-                print(f"[Telemetry] {metric_name} completed in {elapsed:.4f}s")
+                logger.info("%s completed in %.4fs", metric_name, elapsed)
                 
         @functools.wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:

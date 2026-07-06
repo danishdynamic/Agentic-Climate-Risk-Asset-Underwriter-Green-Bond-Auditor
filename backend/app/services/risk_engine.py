@@ -12,7 +12,7 @@ from google.genai import types
 from app.config import settings
 from app.services.quota_manager import quota_manager
 from app.models.finance import OptionExerciseStyle, Bond
-from app.api.routers.metrics import track_execution_latency
+from backend.app.services.metrics import track_execution_latency
 
 logger = logging.getLogger("risk_backend.risk_engine")
 

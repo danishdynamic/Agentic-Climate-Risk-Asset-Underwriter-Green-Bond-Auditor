@@ -8,6 +8,8 @@ from google.genai import types
 from app.config import settings
 from app.services.quota_manager import quota_manager
 from app.services.retriever import retriever_service
+from app.optimizers.response_optimizer import response_optimizer
+from app.services.metrics import track_execution_latency
 
 logger = logging.getLogger("risk_backend.auditor")
 
@@ -15,7 +17,8 @@ class AuditorService:
     def __init__(self):
         self.ai_client = genai.Client(api_key=settings.GOOGLE_API_KEY.get_secret_value())
         self.generation_model = settings.GEMINI_MODEL_ID
-
+        
+    @track_execution_latency("underwriting_audit")
     async def execute_underwriting_audit(
         self, db: AsyncSession, bond_isin: str, user_instruction: str
     ) -> Dict[str, Any]:
@@ -117,14 +120,34 @@ class AuditorService:
             )
             
             final_output = json.loads(verified_response.text or "{}")
-            logger.info(f"Self-reflection pass complete. Hallucinations corrected: {final_output.get('contains_hallucinations_corrected')}")
+
+            optimized = await response_optimizer.optimize(
+                    query=user_instruction,
+                    context=context_corpus,
+                    response=final_output["verified_audit_justification"]
+                )
+
+            final_output["verified_audit_justification"] = optimized.optimized_response
+            final_output["optimization_notes"] = optimized.refinements_made
+            logger.info( "Audit verified and optimized successfully.")
+
             return final_output
 
         except Exception as e:
             logger.error(f"Anti-hallucination verification module failed: {str(e)}")
             # Fall back to the original draft only if verification network drops, but tag it as unverified
+            optimized = await response_optimizer.optimize(
+                    query=user_instruction,
+                    context=context_corpus,
+                    response=draft_payload["audit_justification"]
+                )
+
+            draft_payload["audit_justification"] = optimized.optimized_response
+            draft_payload["optimization_notes"] = optimized.refinements_made
+
             draft_payload["contains_hallucinations_corrected"] = False
             draft_payload["verification_status"] = "BYPASSED_DUE_TO_ERROR"
+
             return draft_payload
 
 auditor_service = AuditorService()

@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from app.database import get_db
 from app.services.retriever import retriever_service
 from app.services.ingestion import ingestion_service
+from app.services.metrics import track_execution_latency
 import logging
 
 router = APIRouter(prefix="/assets", tags=["Assets & Ingestion"])
@@ -50,9 +51,8 @@ class IngestAssetRequest(BaseModel):
     coupon_rate: float = Field(..., ge=0.0, examples=[4.75])
 
 
-@router.post(
-    "/search", response_model=VectorSearchResponse, status_code=status.HTTP_200_OK
-)
+@track_execution_latency("semantic_search")
+@router.post( "/search", response_model=VectorSearchResponse, status_code=status.HTTP_200_OK)
 async def semantic_metadata_search(
     request: VectorSearchRequest, db: AsyncSession = Depends(get_db)
 ):
