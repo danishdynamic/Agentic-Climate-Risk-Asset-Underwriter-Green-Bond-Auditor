@@ -1,6 +1,8 @@
 # 🤖 ClimateRiskIQ: Full Stack Agentic AI Risk & Climate Underwriting Platform
 An enterprise-grade climate risk intelligence platform for bond underwriting, ESG analysis, portfolio hedging, and AI assisted risk assessment. It leverages advanced multi agent systems, semantic search over complex financial/regulatory structures, and high-performance climate math telemetry.
 
+![alt text](AI-agent.png)
+
 ## 🏗️ Core Workspace Modules
 
 - 📊 Executive Dashboard: Dynamic portfolio health statistics, macro climate risk exposure charts, and real time operational status updates.
