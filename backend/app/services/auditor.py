@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone  
 from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from google import genai
@@ -122,32 +123,66 @@ class AuditorService:
             final_output = json.loads(verified_response.text or "{}")
 
             optimized = await response_optimizer.optimize(
-                    query=user_instruction,
-                    context=context_corpus,
-                    response=final_output["verified_audit_justification"]
-                )
+                query=user_instruction,
+                context=context_corpus,
+                response=final_output["verified_audit_justification"]
+            )
 
             final_output["verified_audit_justification"] = optimized.optimized_response
             final_output["optimization_notes"] = optimized.refinements_made
-            logger.info( "Audit verified and optimized successfully.")
+            logger.info("Audit verified and optimized successfully.")
 
-            return final_output
+            # New structural output logic for success path
+            risk_score = max(
+                0,
+                100 - len(final_output.get("detected_vulnerabilities", [])) * 15
+            )
+            if risk_score >= 80:
+                compliance = "compliant"
+            elif risk_score >= 60:
+                compliance = "review"
+            else:
+                compliance = "non-compliant"
+                
+            return {
+                "riskScore": risk_score,
+                "complianceStatus": compliance,
+                "findings": final_output.get("detected_vulnerabilities", []),
+                "optimizationNotes": optimized.refinements_made,
+            }
 
         except Exception as e:
             logger.error(f"Anti-hallucination verification module failed: {str(e)}")
             # Fall back to the original draft only if verification network drops, but tag it as unverified
             optimized = await response_optimizer.optimize(
-                    query=user_instruction,
-                    context=context_corpus,
-                    response=draft_payload["audit_justification"]
-                )
+                query=user_instruction,
+                context=context_corpus,
+                response=draft_payload["audit_justification"]
+            )
 
             draft_payload["audit_justification"] = optimized.optimized_response
-            draft_payload["optimization_notes"] = optimized.refinements_made
+            draft_payload["optimizationNotes"] = optimized.refinements_made
 
             draft_payload["contains_hallucinations_corrected"] = False
             draft_payload["verification_status"] = "BYPASSED_DUE_TO_ERROR"
 
-            return draft_payload
+            # New structural output logic for fallback path
+            risk_score = max(
+                0,
+                100 - len(draft_payload.get("detected_vulnerabilities", [])) * 15
+            )
+            if risk_score >= 80:
+                compliance = "compliant"
+            elif risk_score >= 60:
+                compliance = "review"
+            else:
+                compliance = "non-compliant"
+                
+            return {
+                "riskScore": risk_score,
+                "complianceStatus": compliance,
+                "findings": draft_payload.get("detected_vulnerabilities", []),
+                 "optimizationNotes": optimized.refinements_made,
+            }
 
 auditor_service = AuditorService()

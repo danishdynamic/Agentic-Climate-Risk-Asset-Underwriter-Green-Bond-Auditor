@@ -8,11 +8,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function AgentChat() {
   const messages = useAppStore((state) => state.agentMessages);
+  const isStreaming = useAppStore((state) => state.loading.agent); // Track streaming status
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // FUNCTIONAL FIX: Smooth scrolling during live token-by-token text streams 
+    // causes UI stutter. Use 'auto' when text is generating, 'smooth' for the initial jump.
+    bottomRef.current?.scrollIntoView({ 
+      behavior: isStreaming ? 'auto' : 'smooth' 
+    });
+  }, [messages, isStreaming]);
 
   return (
     <Card className="flex flex-col h-[500px] border-0 shadow-sm">

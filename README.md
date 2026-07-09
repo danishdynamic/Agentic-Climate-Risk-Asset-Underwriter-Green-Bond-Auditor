@@ -1,7 +1,7 @@
 # 🤖 ClimateRiskIQ: Full Stack Agentic AI Risk & Climate Underwriting Platform
 An enterprise-grade climate risk intelligence platform for bond underwriting, ESG analysis, portfolio hedging, and AI assisted risk assessment. It leverages advanced multi agent systems, semantic search over complex financial/regulatory structures, and high-performance climate math telemetry.
 
-![alt text](AI-agent.png)
+![alt text](image.png)
 
 ## 🏗️ Core Workspace Modules
 
@@ -97,7 +97,7 @@ The application uses PostgreSQL with the pgvector extension. The database schema
 2. Fire up the backend storage layer container detached:
 
 ``` Bash
-docker compose up -d
+docker compose up -d || docker compose up -d --build risk-db 
 ```
 
 3. Check execution logs to verify that init.sql correctly provisioned the table structures and embedded vector configurations:
@@ -140,7 +140,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 ```Bash
 cd ../backend
-uvicorn main:app --reload 
+uvicorn app.main:app --reload 
 ```
 - Live API Server will listen on: http://localhost:8000
 

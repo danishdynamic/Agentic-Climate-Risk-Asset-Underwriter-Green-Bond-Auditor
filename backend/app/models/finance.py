@@ -33,7 +33,7 @@ class Bond(Base):
     coupon_rate: Mapped[float] = mapped_column(Numeric(6, 4), nullable=False)
     maturity_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     
-    # Metadata renamed to avoid collision with Base.metadata
+    
     metadata_json: Mapped[dict] = mapped_column("metadata", JSONB, server_default=text("'{}'::jsonb"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 

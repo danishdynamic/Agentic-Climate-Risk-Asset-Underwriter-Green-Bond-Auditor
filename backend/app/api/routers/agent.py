@@ -10,6 +10,7 @@ from app.agents.orchestrator import get_financial_risk_agent
 from app.tools.risk import calculate_climate_var
 from app.tools.compliance import verify_green_bond_compliance
 from app.tools.actuarial import calculate_expected_annual_loss
+from langchain_core.messages import ToolMessage
 from app.database import async_session_maker, get_db
 from app.models.finance import Bond, AssetValuation, RiskProfile
 from sqlalchemy import select
@@ -20,6 +21,14 @@ from app.services.bond_analysis_service import bond_analysis_service
 from ...tools.credit_rating import CreditRating
 from app.services.risk_engine import risk_engine_service
 from app.api.schemas.assets import AssetSummary
+from app.agents.tools import (
+    analyze_bond_tool,
+    climate_value_at_risk_tool,
+    green_compliance_verification_tool,
+    actuarial_expected_loss_tool,
+    generate_hedging_strategy_tool,
+    get_asset_valuation,
+)
 
 
 
@@ -59,6 +68,7 @@ async def analyze_bond(request: BondAnalysisRequest):
 
         try:
             analysis = await bond_analysis_service.analyze_bond(session, bond_id, request.credit_rating)
+            await session.commit()
             return {"status": "success", "data": analysis}
             
         except ValueError as e:
@@ -143,65 +153,70 @@ async def list_agent_tools():
         {"name": "valuation_table", "description": "Retrieves historical bond valuation data"}
     ]
 
-@router.post("/execute-tool")
-async def execute_tool(payload: dict):
-    tool_name = payload.get("tool_name")
-    bond_id = payload.get("params", {}).get("bond_id")
-    
-    async with async_session_maker() as session:
-        # Fetch Bond and join necessary tables
-        stmt = (select(Bond)
-                .options(
-                    joinedload(Bond.risk_profile),
-                    joinedload(Bond.market_profile),
-                    joinedload(Bond.climate_profile),
-                    joinedload(Bond.valuations) 
-                )
-                .where(Bond.id == bond_id)
-            )
-        result = await session.execute(stmt)
-        bond = result.scalar_one_or_none()
-        
-        if not bond:
-            raise HTTPException(status_code=404, detail="Bond not found")
 
-        if tool_name == "climate_var":
-                return calculate_climate_var(
-                    float(bond.face_value), 
-                    0.15, 
-                    float(bond.climate_profile.overall_physical_risk if bond.climate_profile else 0)
-                )
-            
-        elif tool_name == "green_compliance":
-            # Using your database's climate history field
-            return verify_green_bond_compliance(
-                str(bond.bond_type), 
-                float(bond.coupon_rate), 
-                credit_rating=bond.credit_rating,
-                documented_milestones=bond.metadata_json.get("milestones", [])
-            )
-            
-        elif tool_name == "expected_loss":
-            # Fetch linked RiskProfile
-            rp_stmt = select(RiskProfile).where(RiskProfile.bond_id == bond.id)
-            rp = (await session.execute(rp_stmt)).scalar_one_or_none()
-            
-            # Fetch latest valuation
-            val_stmt = select(AssetValuation).where(AssetValuation.bond_id == bond.id).order_by(AssetValuation.valuation_date.desc())
-            val = (await session.execute(val_stmt)).scalar_one_or_none()
-            
-            return calculate_expected_annual_loss(
-                float(val.valuation if val else 0),
-                float(rp.loss_given_default if rp else 0.05),
-                float(rp.probability_of_default if rp else 0.01)
-            )
+@router.post("/execute-tool", status_code=status.HTTP_200_OK)
+async def execute_tool(payload: dict) -> Dict[str, Any]:
+    """
+    Unified Dispatcher Endpoint.
+    
+    Accepts a single consistent public interface from the frontend, 
+    matching any feature block to its respective LangChain tool via 'bond_isin'.
+    
+    Architecture: Frontend ➔ Router ➔ LangChain Tool ➔ Service Layer ➔ DB
+    """
+    tool_name = payload.get("tool_name")
+    params = payload.get("params", {})
+    bond_isin = params.get("bond_isin")
+    
+    # 1. Enforce rigorous payload data contract validation
+    if not tool_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing parameter: 'tool_name' is required."
+        )
         
-        raise HTTPException(status_code=400, detail="Tool not found")
+    if not bond_isin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Missing parameter: 'bond_isin' is required inside 'params'."
+        )
+
+    # 2. Expanded Mapping: Every tool follows the exact same pattern: tool.ainvoke({"bond_isin": bond_isin})
+    tool_mapping = {
+        "analyze_bond": analyze_bond_tool,
+        "climate_var": climate_value_at_risk_tool,
+        "green_compliance": green_compliance_verification_tool,
+        "expected_loss": actuarial_expected_loss_tool,
+        "hedging": generate_hedging_strategy_tool,
+        "valuation_table": get_asset_valuation,
+    }
+
+    tool = tool_mapping.get(tool_name)
+    if not tool:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Tool '{tool_name}' is not recognized by the dispatcher."
+        )
+
+    try:
+        logger.info(f"Dispatching frontend request to tool '{tool_name}' for ISIN: {bond_isin}")
+        
+        # 3. Safe, uniform invocation across all services
+        result = await tool.ainvoke({"bond_isin": bond_isin})
+        return result
+        
+    except Exception as e:
+        # Automatically tracks, parses, and logs the full error traceback safely
+        logger.exception("Dispatcher execution failed for tool '%s' on ISIN %s", tool_name, bond_isin)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Internal tool execution error: {str(e)}"
+        )
         
 
 @router.post("/query-stream", status_code=status.HTTP_200_OK)
 async def query_risk_agent_stream(payload: AgentQueryRequest):
-    # 1. Define the generator function
+    
     async def event_stream():
         agent = get_financial_risk_agent()
         execution_config = RunnableConfig(configurable={"thread_id": payload.thread_id})
@@ -212,50 +227,107 @@ async def query_risk_agent_stream(payload: AgentQueryRequest):
                 config=execution_config,
                 version="v2"
             ):
-                if event["event"] == "on_tool_start":
-                    chunk = event["data"].get("chunk")
-                    if chunk and hasattr(chunk, 'content') and chunk.content:
-                        yield json.dumps({"type": "text", "content": chunk.content}) + "\n"
+                event_type = event["event"]
+                tool_name = event.get("name")
+
+                # 1. Cleanly trap Tool Interception Initations
+                if event_type == "on_tool_start":
+                   # logger.info(type(event["data"]))
+                   # logger.info(repr(event["data"]))
+
+                    yield json.dumps({
+                        "type": "tool_start", 
+                        "tool": tool_name,
+                        "input": event["data"].get("input") 
+                    }) + "\n"
                 
-                elif event["event"] == "on_tool_end":
-                            tool_name = event.get("name")
-                            tool_output = event["data"].get("output")
+            
+                elif event_type == "on_chat_model_stream":
+                    chunk = event["data"].get("chunk")
 
-                            if tool_name == "climate_value_at_risk_tool":
+                    if chunk and hasattr(chunk, "content"):
+                        for block in chunk.content:
+                            if (
+                                isinstance(block, dict)
+                                and block.get("type") == "text"
+                                and block.get("text")
+                            ):
                                 yield json.dumps({
-                                    "type": "tool_result",
-                                    "tool": "climate_var",
-                                    "data": tool_output
+                                    "type": "text",
+                                    "content": block["text"]
                                 }) + "\n"
+                
+                # 3. Handle Tool Completion and map outputs to React components
+                elif event_type == "on_tool_end":
+                    #logger.info(type(event["data"]))
+                    #logger.info(repr(event["data"]))
 
-                            elif tool_name == "green_compliance_verification_tool":
-                                yield json.dumps({
-                                    "type": "tool_result",
-                                    "tool": "compliance",
-                                    "data": tool_output
-                                }) + "\n"
+                    tool_output = event["data"].get("output")
 
-                            elif tool_name == "actuarial_expected_loss_tool":
-                                yield json.dumps({
-                                    "type": "tool_result",
-                                    "tool": "expected_loss",
-                                    "data": tool_output
-                                }) + "\n"
+                    # Added diagnostic logs for tool output right before JSON serialization blocks for debugging
+                    # logger.info(type(tool_output))
+                    # logger.info(repr(tool_output))
 
-                            elif tool_name == "get_asset_valuation":
-                                yield json.dumps({
-                                    "type": "tool_result",
-                                    "tool": "valuation_table",
-                                    "data": tool_output
-                                }) + "\n"
-                        
-                yield json.dumps({"type": "tool_start", "tool": event.get("name")}) + "\n"
+                    if isinstance(tool_output, ToolMessage):
+                        content = tool_output.content
 
-        except Exception as e:
+                        if isinstance(content, str):
+                            try:
+                                tool_output = json.loads(content)
+                            except json.JSONDecodeError:
+                                tool_output = content
+                        else:
+                            # Already structured (list/dict)
+                            tool_output = content
+
+                    if tool_name == "climate_value_at_risk_tool":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "climate_var",
+                            "data": tool_output
+                        }) + "\n"
+
+                    elif tool_name == "green_compliance_verification_tool":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "compliance",
+                            "data": tool_output
+                        }) + "\n"
+
+                    elif tool_name == "actuarial_expected_loss_tool":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "expected_loss",
+                            "data": tool_output
+                        }) + "\n"
+
+                    elif tool_name == "get_asset_valuation":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "valuation_table",
+                            "data": tool_output
+                        }) + "\n"
+                    
+        
+                    elif tool_name == "analyze_bond_tool":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "analyze_bond",
+                            "data": tool_output
+                        }) + "\n"
+
+                    elif tool_name == "generate_hedging_strategy_tool":
+                        yield json.dumps({
+                            "type": "tool_result",
+                            "tool": "hedging_strategy",
+                            "data": tool_output
+                        }) + "\n"
+
+        except json.JSONDecodeError as e:
             logger.error(f"Streaming error: {str(e)}")
             yield json.dumps({"type": "error", "content": str(e)}) + "\n"
 
-    # 2. RETURN the StreamingResponse
+
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 @router.post("/inject-context")

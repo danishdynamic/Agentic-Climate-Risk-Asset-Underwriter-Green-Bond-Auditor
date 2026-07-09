@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from ..models.finance import (
@@ -22,11 +23,11 @@ class BondAnalysisService:
         result = await session.execute(
             select(Bond)
             .options(
-                    joinedload(Bond.climate_profile),
-                    joinedload(Bond.transition_profile),
-                    joinedload(Bond.market_profile),
-                    joinedload(Bond.risk_profile),
-                )
+                joinedload(Bond.climate_profile),
+                joinedload(Bond.transition_profile),
+                joinedload(Bond.market_profile),
+                joinedload(Bond.risk_profile),
+            )
             .where(Bond.id == bond_id)
         )
         bond = result.scalar_one_or_none()
@@ -58,21 +59,26 @@ class BondAnalysisService:
             "eu_taxonomy_eligible": True,
             "transition_risk_score": 0.4,
         }
+        
+        
         market_data = {
             "duration": 5.2,
             "yield_rate": 0.045,
             "spread": 0.012,
             "volatility": 0.15,
             "liquidity_score": 0.8,
+
+            
+            "latest_price": float(bond.face_value),
+            "recommended_strike": float(bond.face_value) * 0.95,
+            "time_to_maturity": (
+                bond.maturity_date
+                - datetime.utcnow().replace(tzinfo=bond.maturity_date.tzinfo)
+            ).days / 365.25,
         }
 
         avg_hazard = sum([v for k, v in climate_data.items() if "score" in k]) / 4
-        #avg_hazard = (
-              #  climate_data["flood_score"]
-              #  + climate_data["wildfire_score"]
-              #  + climate_data["heat_score"]
-              #  + climate_data["drought_score"]
-           # ) / 4
+
         climate_var = calculate_climate_var(
             float(bond.face_value), 0.05, avg_hazard * 20
         )
@@ -104,7 +110,7 @@ class BondAnalysisService:
             ),
         }
 
-        # 4. Upsert
+        # 4. Upsert Profiles (Data staged in the session, no commits here)
         await self._upsert_profile(session, ClimateRiskProfile, bond_id, climate_data)
         await self._upsert_profile(
             session, TransitionRiskProfile, bond_id, transition_data
@@ -112,19 +118,54 @@ class BondAnalysisService:
         await self._upsert_profile(session, MarketRiskProfile, bond_id, market_data)
         await self._upsert_profile(session, RiskProfile, bond_id, risk_data)
 
+        recommendation = (
+            "buy"
+            if risk_data["overall_risk_score"] >= 70
+            else "hold"
+        )
+
         return {
-            "bond": {
-                "isin": bond.isin,
-                "asset_name": bond.asset_name,
-                "credit_rating": bond.credit_rating,
+            "creditRating": bond.credit_rating,
+
+            "riskMetrics": {
+                "climateVar": risk_data["climate_var"],
+                "expectedLoss": risk_data["expected_annual_loss"],
+                "probabilityOfDefault": risk_data["probability_of_default"],
+                "lossGivenDefault": risk_data["loss_given_default"],
+                "overallScore": risk_data["overall_risk_score"],
             },
-            "climate": climate_data,
-            "transition": transition_data,
-            "market": market_data,
-            "risk": risk_data,
+
+            "recommendation": recommendation,
+
+            "climateMetrics": {
+                "floodScore": climate_data["flood_score"],
+                "wildfireScore": climate_data["wildfire_score"],
+                "heatScore": climate_data["heat_score"],
+                "droughtScore": climate_data["drought_score"],
+                "overallPhysicalRisk": climate_data["overall_physical_risk"],
+                "physicalRiskLevel": climate_data["physical_risk_level"],
+            },
+
+            "transitionMetrics": {
+                "carbonIntensity": transition_data["carbon_intensity"],
+                "industry": transition_data["industry"],
+                "sector": transition_data["sector"],
+                "country": transition_data["country"],
+                "euTaxonomyEligible": transition_data["eu_taxonomy_eligible"],
+                "transitionRiskScore": transition_data["transition_risk_score"],
+            },
+
+            "marketMetrics": {
+                "duration": market_data["duration"],
+                "yieldRate": market_data["yield_rate"],
+                "spread": market_data["spread"],
+                "volatility": market_data["volatility"],
+                "liquidityScore": market_data["liquidity_score"],
+            },
+
             "compliance": compliance,
         }
-
+                    
     async def _upsert_profile(self, session, model_class, bond_id, data):
         result = await session.execute(
             select(model_class).where(model_class.bond_id == bond_id)
@@ -142,7 +183,6 @@ class BondAnalysisService:
         """
         Generic upsert for HedgeOption.
         """
-        # Find existing hedge strategy for this bond
         result = await session.execute(
             select(HedgeOption).where(HedgeOption.bond_id == bond_id)
         )

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useAppStore } from '@/lib/store';
 import { PageHeader } from '@/components/ui/layout/PageHeader';
@@ -5,10 +7,10 @@ import { AgentChat } from '@/components/ui/agent/AgentChat';
 import { AgentInput } from '@/components/ui/agent/AgentInput';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Terminal } from 'lucide-react'; 
 
 export default function AgentPage() {
-  // Bind directly to your updated type-safe Zustand slice action
+  const threadId = useAppStore((state) => state.threadId);
   const setInputValue = useAppStore((state) => state.setAgentInputValue);
 
   // Synchronized prompt matrices matching your quantitative backend microservices
@@ -24,11 +26,17 @@ export default function AgentPage() {
   return (
     <div className="space-y-8 flex flex-col h-[calc(100vh-80px)]">
       {/* SECTION: Page Title & Context */}
-      <section aria-label="Page Header">
+      <section aria-label="Page Header" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="AI Risk Agent"
           subtitle="Natural language climate intelligence and model interrogation"
         />
+        
+        <div className="flex items-center gap-2 self-start sm:self-center font-mono text-[11px] bg-muted/50 border border-border/60 rounded-md px-3 py-1.5 text-muted-foreground shadow-sm">
+          <Terminal className="h-3 w-3 text-primary animate-pulse" />
+          <span className="text-foreground/70 font-semibold uppercase tracking-wider">Session:</span>
+          <span className="tracking-tight select-all">{threadId ?? 'Initializing...'}</span>
+        </div>
       </section>
 
       {/* SECTION: Conversational Terminal Workspace (70% Chat / 30% Input Split) */}

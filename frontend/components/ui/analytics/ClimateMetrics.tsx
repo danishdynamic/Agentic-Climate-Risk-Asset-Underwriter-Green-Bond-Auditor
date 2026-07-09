@@ -3,19 +3,27 @@
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { } from '@/lib/types';
 
 export function ClimateMetrics() {
   const analysis = useAppStore((state) => state.bondAnalysis);
 
   if (!analysis) return null;
 
-  // We map the available riskMetrics as a proxy for the climate view 
-  // until the backend API is updated to return climate-specific fields.
   const metrics = [
-    { label: 'Duration Risk', value: analysis.riskMetrics.duration },
-    { label: 'Convexity', value: analysis.riskMetrics.convexity },
-    { label: 'Yield to Maturity', value: analysis.riskMetrics.yieldToMaturity },
-  ];
+      {
+        label: 'Duration',
+        value: analysis.marketMetrics.duration,
+      },
+      {
+        label: 'Yield Rate',
+        value: analysis.marketMetrics.yieldRate,
+      },
+      {
+        label: 'Volatility',
+        value: analysis.marketMetrics.volatility,
+      },
+    ];
 
   return (
     <Card className="rounded-lg border-0 shadow-sm h-full">

@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send } from 'lucide-react';
 
 export function AgentInput() {
-  // Bind directly to global Zustand tracking state to support external prompt injection
   const query = useAppStore((state) => state.agentInputValue);
   const setQuery = useAppStore((state) => state.setAgentInputValue);
 
@@ -19,13 +18,15 @@ export function AgentInput() {
     if (!query.trim() || isLoading) return;
     
     const currentQuery = query;
-    // Evacuate input state instantly to block accidental double-submissions
+    // Clear input instantly to block accidental double-submissions
     setQuery('');
     
     try {
       await queryAgent(currentQuery);
-    } catch {
-      // Rollback buffer value if your hook doesn't internally cache or fail-gracefully
+    } catch (err) {
+      // FUNCTIONAL FIX: If execution fails, restore the text block buffer
+      // so the user doesn't lose their long typed prompt.
+      setQuery(currentQuery);
     }
   };
 

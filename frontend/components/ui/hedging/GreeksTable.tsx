@@ -9,10 +9,18 @@ export function GreeksTable() {
 
   if (!hedgingResult) return null;
 
+  // Handles both nested strategy schemas or direct assignments safely
+  const hedge = hedgingResult.hedge_option;
+
+  if (!hedge) return null;
+
   const parameters = [
-    { label: 'Instrument', value: hedgingResult.instrument },
-    { label: 'Hedge Ratio', value: hedgingResult.hedgeRatio.toString() },
-    { label: 'Est. Cost', value: hedgingResult.costEstimate },
+    { label: "Delta", value: hedge.delta },
+    { label: "Gamma", value: hedge.gamma },
+    { label: "Vega", value: hedge.vega },
+    { label: "Theta", value: hedge.theta },
+    { label: "Rho", value: hedge.rho },
+    { label: "Option Style", value: hedge.option_style },
   ];
 
   return (
@@ -32,7 +40,11 @@ export function GreeksTable() {
             {parameters.map((p) => (
               <TableRow key={p.label}>
                 <TableCell className="font-medium">{p.label}</TableCell>
-                <TableCell className="text-right font-mono font-bold">{p.value}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {typeof p.value === "number" 
+                    ? p.value.toFixed(4) 
+                    : p.value}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

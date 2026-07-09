@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from enum import Enum  # Fix 1: Added missing Enum import
 from typing_extensions import Self
 from pydantic import BaseModel, Field, field_validator, model_validator
 from app.models.finance import BondAssetType
@@ -9,13 +10,14 @@ class BondUnderwritingCreate(BaseModel):
     isin: str = Field(..., description="12-character alphanumeric ISIN")
     asset_name: str = Field(..., max_length=255)
     bond_type: BondAssetType
-    credit_rating: CreditRating  # Pydantic validates this against the Enum automatically
+    credit_rating: CreditRating  
     face_value: float = Field(..., gt=0)
     coupon_rate: float = Field(..., ge=0, le=1.0, description="Fraction, e.g., 0.055 for 5.5%")
     maturity_date: datetime
     full_climate_history: str
-    metadata_json: dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
 
+    # Fix 2: Relocated validators to the correct model
     @field_validator("isin")
     @classmethod
     def validate_isin_format(cls, value: str) -> str:
@@ -30,7 +32,6 @@ class BondUnderwritingCreate(BaseModel):
         Cross-field safety rule:
         If the asset is NOT investment grade, reject if coupon is below 6.00% (0.06).
         """
-        # self.credit_rating is already a CreditRating Enum instance here
         if not self.credit_rating.is_investment_grade:
             if self.coupon_rate < 0.06:
                 raise ValueError(
@@ -39,3 +40,14 @@ class BondUnderwritingCreate(BaseModel):
                     f"Received: {self.coupon_rate * 100:.2f}%."
                 )
         return self
+
+class ComplianceStatus(str, Enum):
+    COMPLIANT = "compliant"
+    REVIEW = "review"
+    NON_COMPLIANT = "non-compliant"
+
+class UnderwritingResponse(BaseModel):
+    riskScore: float
+    complianceStatus: ComplianceStatus
+    findings: list[str]
+    optimizationNotes: list[str]

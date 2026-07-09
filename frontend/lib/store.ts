@@ -9,12 +9,16 @@ import {
   HealthStatus,
   ChatMessage,
   BondAnalysis,
+  ClimateVarResult,
+  ComplianceResult,
+  ExpectedLossResult,
+  ValuationRow,
 } from '@/lib/types';
 
 interface AppStore {
   // Session
   threadId: string | null;
-  sessionId: string |null;
+  sessionId: string | null;
   sidebarCollapsed: boolean;
 
   // Data
@@ -22,31 +26,38 @@ interface AppStore {
   selectedBond: AssetSummary | null;
   activeAsset: AssetSummary | null;
 
-  auditResult: AuditResult | null;
-  hedgingResult: HedgingStrategy | null;
-  bondAnalysis: BondAnalysis | null;
-
   healthStatus: HealthStatus | null;
-
   searchResults: SearchResult[];
   lastSearchQuery: string | null;
 
+  // Chat Agent
   agentMessages: ChatMessage[];
   agentInputValue: string;
 
-  selectedBondId: string | null;
+  // =====================================================================
+  // UPDATED: Unified Tool Execution States
+  // =====================================================================
+  bondAnalysis: BondAnalysis | null;          // "analyze_bond"
+  hedgingResult: HedgingStrategy | null;      // "hedging"
+  auditResult: AuditResult | null;            // "executeUnderwriting"
+  climateVarResult: ClimateVarResult | null;               // "climate_var" (NEW)
+  complianceResult: ComplianceResult | null;               // "green_compliance" (NEW)
+  expectedLossResult: ExpectedLossResult | null;             // "expected_loss" (NEW)
+  valuationTable: ValuationRow[] | null;               // "valuation_table" (NEW)
+
 
   // Status
   auditStatus: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   hedgingStatus: 'IDLE' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
+  // EXTENDED: Added generic 'tool' key to cover ad-hoc button executions
   loading: Record<
-    'search' | 'upload' | 'audit' | 'hedging' | 'agent',
+    'search' | 'upload' | 'audit' | 'hedging' | 'agent' | 'tool',
     boolean
   >;
 
   errors: Record<
-    'search' | 'upload' | 'audit' | 'hedging' | 'agent',
+    'search' | 'upload' | 'audit' | 'hedging' | 'agent' | 'tool',
     string | undefined
   >;
 
@@ -57,42 +68,39 @@ interface AppStore {
   setThreadId: (id: string | null) => void;
   setSessionId: (id: string | null) => void;
 
-  setAuditResult: (result: AuditResult | null) => void;
-  setAuditStatus: (status: AppStore['auditStatus']) => void;
-
-  setHedgingResult: (result: HedgingStrategy | null) => void;
-  setHedgingStatus: (status: AppStore['hedgingStatus']) => void;
-
-  setBondAnalysis: (analysis: BondAnalysis | null) => void;
-
   setHealthStatus: (status: HealthStatus | null) => void;
 
-  setSearchResults: (
-    results: SearchResult[],
-    query?: string
-  ) => void;
+  setSearchResults: (results: SearchResult[], query?: string) => void;
 
+  // =====================================================================
+  // NEW: Streaming Chat & Ad-hoc Setters
+  // =====================================================================
   setAgentMessages: (messages: ChatMessage[]) => void;
+  addAgentMessage: (message: ChatMessage) => void; // Quick array append
+  appendAgentStreamChunk: (textChunk: string) => void; // Appends incoming tokens
   setAgentInputValue: (value: string) => void;
 
-  setLoading: (
-    key: keyof AppStore['loading'],
-    value: boolean
-  ) => void;
+  setBondAnalysis: (analysis: BondAnalysis | null) => void;
+  setHedgingResult: (result: HedgingStrategy | null) => void;
+  setAuditResult: (result: AuditResult | null) => void;
+  setClimateVarResult: (result: ClimateVarResult | null) => void;
+  setComplianceResult: (result: ComplianceResult | null) => void;
+  setExpectedLossResult: (result: ExpectedLossResult | null) => void;
+  setValuationTable: (data: ValuationRow[] | null) => void;
 
-  setError: (
-    key: keyof AppStore['errors'],
-    message?: string
-  ) => void;
+  setAuditStatus: (status: AppStore['auditStatus']) => void;
+  setHedgingStatus: (status: AppStore['hedgingStatus']) => void;
+
+  setLoading: (key: keyof AppStore['loading'], value: boolean) => void;
+  setError: (key: keyof AppStore['errors'], message?: string) => void;
 
   setSidebarCollapsed: (collapsed: boolean) => void;
-
   reset: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
   // Session
-  threadId: null,
+  threadId:crypto.randomUUID(),
   sessionId: null,
   sidebarCollapsed: false,
 
@@ -101,19 +109,22 @@ export const useAppStore = create<AppStore>((set) => ({
   selectedBond: null,
   activeAsset: null,
 
-  auditResult: null,
-  hedgingResult: null,
-  bondAnalysis: null,
-
   healthStatus: null,
-
   searchResults: [],
   lastSearchQuery: null,
 
   agentMessages: [],
   agentInputValue: '',
 
-  selectedBondId: null,
+  // Tool Outputs
+  bondAnalysis: null,
+  hedgingResult: null,
+  auditResult: null,
+  climateVarResult: null,
+  complianceResult: null,
+  expectedLossResult: null,
+  valuationTable: null,
+
 
   // Status
   auditStatus: 'IDLE',
@@ -125,6 +136,7 @@ export const useAppStore = create<AppStore>((set) => ({
     audit: false,
     hedging: false,
     agent: false,
+    tool: false, // Initialized
   },
 
   errors: {
@@ -133,43 +145,21 @@ export const useAppStore = create<AppStore>((set) => ({
     audit: undefined,
     hedging: undefined,
     agent: undefined,
+    tool: undefined, // Initialized
   },
 
   // Actions
-
-  setAssets: (assets) =>
-    set({ assets }),
+  setAssets: (assets) => set({ assets }),
 
   setSelectedBond: (bond) =>
     set({
       selectedBond: bond,
       activeAsset: bond,
-      selectedBondId: bond ? String(bond.id) : null,
     }),
 
-  setThreadId: (threadId) =>
-    set({ threadId }),
-
-  setSessionId: (sessionId) =>
-    set({ sessionId }),
-
-  setAuditResult: (auditResult) =>
-    set({ auditResult }),
-
-  setAuditStatus: (auditStatus) =>
-    set({ auditStatus }),
-
-  setHedgingResult: (hedgingResult) =>
-    set({ hedgingResult }),
-
-  setHedgingStatus: (hedgingStatus) =>
-    set({ hedgingStatus }),
-
-  setBondAnalysis: (bondAnalysis) =>
-    set({ bondAnalysis }),
-
-  setHealthStatus: (healthStatus) =>
-    set({ healthStatus }),
+  setThreadId: (threadId) => set({ threadId }),
+  setSessionId: (sessionId) => set({ sessionId }),
+  setHealthStatus: (healthStatus) => set({ healthStatus }),
 
   setSearchResults: (searchResults, query) =>
     set({
@@ -177,40 +167,66 @@ export const useAppStore = create<AppStore>((set) => ({
       lastSearchQuery: query ?? null,
     }),
 
-  setAgentMessages: (agentMessages) =>
-    set({ agentMessages }),
+  // Chat Mechanics
+  setAgentMessages: (agentMessages) => set({ agentMessages }),
+  
+  addAgentMessage: (message) => 
+    set((state) => ({ agentMessages: [...state.agentMessages, message] })),
 
-  setAgentInputValue: (agentInputValue) =>
-    set({ agentInputValue }),
+  appendAgentStreamChunk: (textChunk) =>
+    set((state) => {
+      const messages = [...state.agentMessages];
+      if (messages.length === 0) return { agentMessages: messages };
+      
+      const lastMessage = { ...messages[messages.length - 1] };
+      // Safely append text to the active streaming assistant target message block
+      if (lastMessage.role === "assistant") {
+            lastMessage.content += textChunk;
+        }
+      messages[messages.length - 1] = lastMessage;
+      
+      return { agentMessages: messages };
+    }),
+
+  setAgentInputValue: (agentInputValue) => set({ agentInputValue }),
+
+  // Tool State Setters
+  setBondAnalysis: (bondAnalysis) => set({ bondAnalysis }),
+  setHedgingResult: (hedgingResult) => set({ hedgingResult }),
+  setAuditResult: (auditResult) => set({ auditResult }),
+  setClimateVarResult: (climateVarResult) => set({ climateVarResult }),
+  setComplianceResult: (complianceResult) => set({ complianceResult }),
+  setExpectedLossResult: (expectedLossResult) => set({ expectedLossResult }),
+  setValuationTable: (valuationTable) => set({ valuationTable }),
+
+  setAuditStatus: (auditStatus) => set({ auditStatus }),
+  setHedgingStatus: (hedgingStatus) => set({ hedgingStatus }),
 
   setLoading: (key, value) =>
     set((state) => ({
-      loading: {
-        ...state.loading,
-        [key]: value,
-      },
+      loading: { ...state.loading, [key]: value },
     })),
 
   setError: (key, message) =>
     set((state) => ({
-      errors: {
-        ...state.errors,
-        [key]: message,
-      },
+      errors: { ...state.errors, [key]: message },
     })),
 
-  setSidebarCollapsed: (sidebarCollapsed) =>
-    set({ sidebarCollapsed }),
+  setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
 
   reset: () =>
     set({
+      threadId: crypto.randomUUID(),
       selectedBond: null,
       activeAsset: null,
-      selectedBondId: null,
 
-      auditResult: null,
-      hedgingResult: null,
       bondAnalysis: null,
+      hedgingResult: null,
+      auditResult: null,
+      climateVarResult: null,
+      complianceResult: null,
+      expectedLossResult: null,
+      valuationTable: null,
 
       searchResults: [],
       lastSearchQuery: null,
@@ -227,6 +243,7 @@ export const useAppStore = create<AppStore>((set) => ({
         audit: false,
         hedging: false,
         agent: false,
+        tool: false,
       },
 
       errors: {
@@ -235,6 +252,7 @@ export const useAppStore = create<AppStore>((set) => ({
         audit: undefined,
         hedging: undefined,
         agent: undefined,
+        tool: undefined,
       },
     }),
 }));

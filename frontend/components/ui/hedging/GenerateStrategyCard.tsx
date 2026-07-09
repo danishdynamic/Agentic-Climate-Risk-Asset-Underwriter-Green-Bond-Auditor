@@ -18,7 +18,7 @@ export function GenerateStrategyCard() {
 
     try {
       // Maps exactly to the numerical contract required by your API wrapper
-      await calculateHedging(selectedBond.id);
+      await calculateHedging(selectedBond.isin);
     } catch {
       // Intentional silent catch: State engine intercepts exceptions via store errors slice
     }

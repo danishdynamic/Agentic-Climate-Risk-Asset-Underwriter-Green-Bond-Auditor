@@ -66,9 +66,9 @@ export const api = {
       },
 
   // 5. Hedging Strategy (JSON)
-  async calculateHedgingStrategy(data: { bond_id: number }) {
-        if (!data.bond_id || typeof data.bond_id !== 'number') {
-          throw new Error("Invalid input: bond_id must be a number");
+  async calculateHedgingStrategy(data: { bond_isin: string }) {
+        if (!data.bond_isin) {
+          throw new Error("Invalid input: bond_isin is required");
         }
         
         const res = await fetch(`${API_BASE_URL}/api/v1/audit/calculate-hedging-strategy`, {
@@ -130,7 +130,8 @@ async analyzeBond(bond_isin: string, credit_rating: string) {
         throw new Error(errorData.detail || "Failed to analyze bond");
       }
 
-      return res.json();
+      const json = await res.json();
+      return json.data;
     },
 
   // lib/api.ts
@@ -141,37 +142,82 @@ async getAssets(): Promise<AssetSummary[]>{
     return data.assets; // Expecting { assets: ["ISIN1", "ISIN2"] }
   },
 
+// 9. Execute Unified Tool Module
+async executeTool(toolName: string, bondIsin: string) {
+    const res = await fetch(`${API_BASE_URL}/api/v1/agent/execute-tool`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tool_name: toolName,
+        params: {
+          bond_isin: bondIsin
+        }
+      }),
+    });
 
-  // Use this for the interactive chat interface
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: "Unified tool execution failed" }));
+      throw new Error(errorData.detail || "Failed to execute backend tool module.");
+    }
+
+    return res.json();
+  },
+
+
+  // Use this for the interactive chat interface - Agent Event Streaming Pipeline
+  
 async queryRiskAgentStream(data: AgentQueryInput, onMessage: (msg: any) => void) {
     const res = await fetch(`${API_BASE_URL}/api/v1/agent/query-stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Streaming query failed" }));
-        throw new Error(errorData.message || "Failed to stream agent response");
-      }
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: "Streaming query failed" }));
+      throw new Error(errorData.message || "Failed to stream agent response");
+    }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = ""; // Prevents partial chunk JSON parsing errors across stream splits
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(line => line.trim() !== "");
-        // Parse the JSON chunk sent from the backend
-        for (const line of lines) {
-          try {
-            const parsed = JSON.parse(line);
-            onMessage(parsed);
-          } catch (e) {
-            console.error("Error parsing JSON chunk", e);
-          }
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Decode current chunk stream segment and append it to our local string buffer
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+
+      // Keep the last partial line inside the buffer block
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.trim() === "") continue;
+        try {
+          const parsed = JSON.parse(line);
+          
+          // Yields uniform event payloads: 
+          // { type: "text", content: "..." }
+          // { type: "tool_start", tool: "...", input: {...} }
+          // { type: "tool_result", tool: "...", data: {...} }
+          onMessage(parsed);
+          
+        } catch (e) {
+          console.error("Failed to parse incoming streaming line payload:", line, e);
         }
       }
-    },
-    };
+    }
+
+    // Process any remaining data tail left over in the buffer string
+    if (buffer.trim() !== "") {
+      try {
+        const parsed = JSON.parse(buffer);
+        onMessage(parsed);
+      } catch (e) {
+        console.error("Failed parsing leftover buffer line trail:", buffer, e);
+      }
+    }
+  },
+};

@@ -14,14 +14,14 @@ export function useHedging() {
   const setLoading = useAppStore((state) => state.setLoading);
   const setError = useAppStore((state) => state.setError);
 
-  const calculateHedging = async (bondId: number) => {
+  const calculateHedging = async (bondIsin: string) => {
     // Use 'hedging' key explicitly to satisfy the type definition
     setLoading('hedging', true);
     setError('hedging', undefined);
 
     try {
       const response: HedgingStrategy = await api.calculateHedgingStrategy({ 
-        bond_id: bondId 
+        bond_isin: bondIsin 
       });
       
       setHedgingResult(response);

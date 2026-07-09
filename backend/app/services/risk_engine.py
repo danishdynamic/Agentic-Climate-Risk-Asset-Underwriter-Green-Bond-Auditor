@@ -12,7 +12,7 @@ from google.genai import types
 from app.config import settings
 from app.services.quota_manager import quota_manager
 from app.models.finance import OptionExerciseStyle, Bond
-from backend.app.services.metrics import track_execution_latency
+from app.services.metrics import track_execution_latency
 
 logger = logging.getLogger("risk_backend.risk_engine")
 
@@ -152,7 +152,7 @@ class ActuarialRiskEngine:
             isin=bond.isin, 
             credit_rating=str(bond.credit_rating),
             hazard_score=float(climate.overall_physical_risk),
-            financial_exposure=float(bond.face_value * (1 - float(risk.probability_of_default))),
+            financial_exposure=( float(bond.face_value) * (1 - float(risk.probability_of_default))),
             greeks=greeks
         )
 
