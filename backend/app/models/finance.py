@@ -19,6 +19,10 @@ class OptionExerciseStyle(str, PyEnum):
     AMERICAN = "AMERICAN"
     EUROPEAN = "EUROPEAN"
 
+class OptionType(str, PyEnum):
+    CALL = "CALL"
+    PUT = "PUT"
+
 
 # --- Master Table ---
 class Bond(Base):
@@ -117,6 +121,7 @@ class RiskProfile(Base):
     expected_annual_loss: Mapped[float] = mapped_column(Numeric(16, 4), default=0)
     overall_risk_score: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     investment_grade: Mapped[bool] = mapped_column(Boolean)
+    recommendation: Mapped[str] = mapped_column(String(20), nullable=True)
     green_bond_compliant: Mapped[bool] = mapped_column(Boolean, default=False)
     updated_at: Mapped[datetime] = mapped_column(server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP"))
     bond: Mapped["Bond"] = relationship(back_populates="risk_profile")
@@ -128,6 +133,11 @@ class HedgeOption(Base):
     bond_id: Mapped[int] = mapped_column(ForeignKey("bonds.id", ondelete="CASCADE"))
     recommended: Mapped[bool] = mapped_column(Boolean, default=False)
     option_style: Mapped[OptionExerciseStyle] = mapped_column(PGEnum(OptionExerciseStyle, name="option_exercise_style"))
+    option_type: Mapped[OptionType] = mapped_column( PGEnum(OptionType, name="option_type"))
+    underlying_price: Mapped[float] = mapped_column( Numeric(16,4), default=0)
+    hedge_ratio: Mapped[float] = mapped_column( Numeric(8,4), default=0)
+    model_name: Mapped[str] = mapped_column(String(100))
+    recommended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     strike_price: Mapped[float] = mapped_column(Numeric(16, 4))
     expiration_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     implied_volatility: Mapped[float] = mapped_column(Numeric(9, 6), default=0)

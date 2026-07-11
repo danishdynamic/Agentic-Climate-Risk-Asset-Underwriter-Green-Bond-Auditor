@@ -5,6 +5,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TYPE bond_asset_type AS ENUM ('CORPORATE', 'FINANCIAL', 'SOVEREIGN');
 CREATE TYPE option_exercise_style AS ENUM ('AMERICAN', 'EUROPEAN');
+CREATE TYPE option_type AS ENUM ( 'CALL','PUT');
 
 -- ====================================================================
 -- 2. CORE FINANCIAL INSTRUMENTS
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS risk_profiles (
     expected_annual_loss NUMERIC(16,4) DEFAULT 0,
     overall_risk_score NUMERIC(5,2) DEFAULT 0,
     investment_grade BOOLEAN NOT NULL,
+    recommendation VARCHAR(20),
     green_bond_compliant BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS hedge_options (
     bond_id INT REFERENCES bonds(id) ON DELETE CASCADE,
     recommended BOOLEAN DEFAULT FALSE,
     option_style option_exercise_style NOT NULL,
+    option_type option_type NOT NULL,
     strike_price NUMERIC(16, 4) NOT NULL,
     expiration_date TIMESTAMP WITH TIME ZONE NOT NULL,
     implied_volatility NUMERIC(9, 6) DEFAULT 0.000000,
@@ -100,6 +103,10 @@ CREATE TABLE IF NOT EXISTS hedge_options (
     vega NUMERIC(9, 6) DEFAULT 0.000000,
     theta NUMERIC(9, 6) DEFAULT 0.000000,
     rho NUMERIC(9, 6) DEFAULT 0.000000,
+    underlying_price NUMERIC(16,4),
+    hedge_ratio NUMERIC(8,4),
+    model_name VARCHAR(100),
+    recommended_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

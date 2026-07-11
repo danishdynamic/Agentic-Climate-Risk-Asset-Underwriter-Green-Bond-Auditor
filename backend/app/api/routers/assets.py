@@ -5,12 +5,13 @@ from app.models.finance import (
     Bond,
     ClimateRiskProfile,
     TransitionRiskProfile,
-    MarketRiskProfile,
+    MarketRiskProfile, RiskProfile, HedgeOption, OptionExerciseStyle, OptionType
 )
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
-
+import json
+from sqlalchemy import text
 from app.database import get_db
 from app.services.retriever import retriever_service
 from app.services.ingestion import ingestion_service
@@ -121,6 +122,19 @@ async def ingest_structured_asset(
     spread: float | None = Form(None),
     volatility: float | None = Form(None),
     liquidity_score: float | None = Form(None),
+    latest_price: float = Form(...),
+    recommended_strike: float = Form(...),
+    time_to_maturity: float = Form(...),
+    overall_physical_risk: float = Form(...),
+    physical_risk_level: str = Form(...),
+    transition_risk_score: float = Form(...),
+    probability_of_default: float = Form(...),
+    loss_given_default: float = Form(...),
+    climate_var: float = Form(...),
+    expected_annual_loss: float = Form(...),
+    overall_risk_score: float = Form(...),
+    investment_grade: bool = Form(...),
+    green_bond_compliant: bool = Form(...),
     flood_score: float = Form(...),
     wildfire_score: float = Form(...),
     heat_score: float = Form(...),
@@ -148,29 +162,98 @@ async def ingest_structured_asset(
             db.add(bond)
             await db.flush()
 
-        # 2. Upsert normalized profiles
-        await _upsert_profile(db, MarketRiskProfile, bond.id, {
-            "duration": duration, "yield_rate": yield_rate, "spread": spread,
-            "volatility": volatility, "liquidity_score": liquidity_score
-        })
+        # 2. Upsert expanded MarketRiskProfile
+        await _upsert_profile(
+            db,
+            MarketRiskProfile,
+            bond.id,
+            {
+                "duration": duration,
+                "yield_rate": yield_rate,
+                "spread": spread,
+                "volatility": volatility,
+                "liquidity_score": liquidity_score,
+                "latest_price": latest_price,
+                "recommended_strike": recommended_strike,
+                "time_to_maturity": time_to_maturity,
+            }
+        )
 
-        await _upsert_profile(db, ClimateRiskProfile, bond.id, {
-            "flood_score": flood_score, "wildfire_score": wildfire_score,
-            "heat_score": heat_score, "drought_score": drought_score
-        })
+        # 3. Upsert expanded ClimateRiskProfile
+        await _upsert_profile(
+            db,
+            ClimateRiskProfile,
+            bond.id,
+            {
+                "flood_score": flood_score,
+                "wildfire_score": wildfire_score,
+                "heat_score": heat_score,
+                "drought_score": drought_score,
+                "overall_physical_risk": overall_physical_risk,
+                "physical_risk_level": physical_risk_level,
+            }
+        )
 
-        await _upsert_profile(db, TransitionRiskProfile, bond.id, {
-            "carbon_intensity": carbon_intensity, "industry": industry,
-            "sector": sector, "country": country, "eu_taxonomy_eligible": eu_taxonomy_eligible
-        })
+        # 4. Upsert expanded TransitionRiskProfile
+        await _upsert_profile(
+            db,
+            TransitionRiskProfile,
+            bond.id,
+            {
+                "carbon_intensity": carbon_intensity,
+                "industry": industry,
+                "sector": sector,
+                "country": country,
+                "eu_taxonomy_eligible": eu_taxonomy_eligible,
+                "transition_risk_score": transition_risk_score,
+            }
+        )
 
-        # 3. Process Vectorization
+        # 5. Upsert newly populated RiskProfile
+        await _upsert_profile(
+            db,
+            RiskProfile,
+            bond.id,
+            {
+                "probability_of_default": probability_of_default,
+                "loss_given_default": loss_given_default,
+                "climate_var": climate_var,
+                "expected_annual_loss": expected_annual_loss,
+                "overall_risk_score": overall_risk_score,
+                "investment_grade": investment_grade,
+                "green_bond_compliant": green_bond_compliant,
+            }
+        )
+
+        # 6. Populate HedgeOption if it doesn't already exist
+        hedge_result = await db.execute(
+            select(HedgeOption).where(HedgeOption.bond_id == bond.id)
+        )
+        existing_hedge = hedge_result.scalars().first()
+
+        if not existing_hedge:
+            db.add(
+                HedgeOption(
+                    bond_id=bond.id,
+                    option_style=OptionExerciseStyle.EUROPEAN,
+                    option_type=OptionType.PUT,
+                    strike_price=recommended_strike,
+                    implied_volatility=volatility,
+                    time_to_maturity=time_to_maturity,
+                )
+            )
+
+        # 7. Process Vectorization (With JSON metadata pipeline intact)
         raw_text = await ingestion_service.extract_text_from_file(file)
         chunks_created = await ingestion_service.process_and_vectorize_asset(
             db=db,
             bond_isin=isin,
             raw_text=raw_text,
-            metadata={"sector": sector, "country": country, "green": eu_taxonomy_eligible},
+            metadata={
+                "sector": sector, 
+                "country": country, 
+                "green": eu_taxonomy_eligible
+            },
         )
 
         await db.commit()

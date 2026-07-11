@@ -10,9 +10,9 @@ def calculate_expected_annual_loss(
     adjusted for climate-driven loss severities.
     """
     # Force float constraints
-    val = float(asset_valuation)                   # ifrs 17
-    alpha = float(structural_vulnerability_alpha)  # Damage severity exponent
-    prob = float(hazard_probability)               # Annualized occurrence probability (0.0 to 1.0)
+    val = float(asset_valuation)                   
+    alpha = float(structural_vulnerability_alpha)  
+    prob = float(hazard_probability)               
     
     # Actuarial damage function curve calculation
     implied_severity = min(max(alpha * 1.15, 0.0), 1.0)

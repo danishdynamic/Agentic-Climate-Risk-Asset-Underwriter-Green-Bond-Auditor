@@ -7,16 +7,12 @@ from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from app.agents.orchestrator import get_financial_risk_agent
-from app.tools.risk import calculate_climate_var
-from app.tools.compliance import verify_green_bond_compliance
-from app.tools.actuarial import calculate_expected_annual_loss
 from langchain_core.messages import ToolMessage
 from app.database import async_session_maker, get_db
-from app.models.finance import Bond, AssetValuation, RiskProfile
+from app.models.finance import Bond
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
 from app.services.bond_analysis_service import bond_analysis_service
 from ...tools.credit_rating import CreditRating
 from app.services.risk_engine import risk_engine_service

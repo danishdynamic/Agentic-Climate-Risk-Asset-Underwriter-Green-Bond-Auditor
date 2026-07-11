@@ -5,6 +5,7 @@ from sqlalchemy import text
 from google import genai
 import fitz  
 import io
+import json
 from fastapi import UploadFile, HTTPException
 from google.genai import types
 
@@ -89,7 +90,8 @@ class IngestionService:
                 await db.execute(query, {
                     "bond_id": internal_bond_id,
                     "content": chunk,
-                    "embedding": str(vector_embedding)
+                    "embedding": str(vector_embedding),
+                    "metadata": json.dumps(metadata)
                 })
                 
                 chunks_created += 1
