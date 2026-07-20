@@ -34,3 +34,24 @@ frontend/node_modules/
 # TypeScript
 *.tsbuildinfo
 
+# ==========================================
+# Proprietary Core Logic & Database Schemas
+# ==========================================
+
+# Database Migrations (includes 01_init.sql)
+backend/app/migrations/
+
+# Core Financial Data Models (includes finance.py)
+backend/app/models/
+backend/app/api/schemas/
+
+# Core Proprietary Engines & Financial Services
+backend/app/services/auditor.py
+backend/app/services/bond_analysis_service.py
+backend/app/services/compliance_service.py
+backend/app/services/hedging_engine.py
+backend/app/services/risk_engine.py
+
+# Proprietary Routers / API Endpoints
+backend/app/api/routers/assets.py
+
