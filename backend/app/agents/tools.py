@@ -4,7 +4,7 @@ import logging
 from langchain_core.tools import tool
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-
+from fastapi.encoders import jsonable_encoder
 from app.database import async_session_maker
 from app.models.finance import Bond, AssetValuation
 from app.services.risk_engine import risk_engine_service
@@ -58,13 +58,13 @@ async def analyze_bond_tool(bond_isin: str) -> dict:
         if not bond:
             return {"error": f"Bond ISIN {bond_isin} not found."}
 
-        return await bond_analysis_service.analyze_bond(
+        result = await bond_analysis_service.analyze_bond(
             session=session,
             bond_id=bond.id,
             credit_rating=bond.credit_rating,
         )
 
-
+        return jsonable_encoder(result)
 # ==========================================================
 # 2. Climate Value at Risk
 # ==========================================================

@@ -3,6 +3,7 @@ import json
 from typing import Dict, Any
 from fastapi import APIRouter, status , HTTPException, Depends
 from fastapi.responses import StreamingResponse
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -25,6 +26,7 @@ from app.agents.tools import (
     generate_hedging_strategy_tool,
     get_asset_valuation,
 )
+
 
 
 
@@ -64,6 +66,7 @@ async def analyze_bond(request: BondAnalysisRequest):
 
         try:
             analysis = await bond_analysis_service.analyze_bond(session, bond_id, request.credit_rating)
+            analysis = jsonable_encoder(analysis)
             await session.commit()
             return {"status": "success", "data": analysis}
             
@@ -231,11 +234,11 @@ async def query_risk_agent_stream(payload: AgentQueryRequest):
                    # logger.info(type(event["data"]))
                    # logger.info(repr(event["data"]))
 
-                    yield json.dumps({
+                    yield json.dumps(jsonable_encoder({
                         "type": "tool_start", 
                         "tool": tool_name,
                         "input": event["data"].get("input") 
-                    }) + "\n"
+                    })) + "\n"
                 
             
                 elif event_type == "on_chat_model_stream":
@@ -274,7 +277,7 @@ async def query_risk_agent_stream(payload: AgentQueryRequest):
                                 tool_output = content
                         else:
                             # Already structured (list/dict)
-                            tool_output = content
+                            tool_output =  jsonable_encoder(content)
 
                     if tool_name == "climate_value_at_risk_tool":
                         yield json.dumps({

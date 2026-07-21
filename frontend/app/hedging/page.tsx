@@ -12,10 +12,11 @@ export default function HedgingPage() {
   const [isEngineOpen, setIsEngineOpen] = useState(false);
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto px-4 py-2">
+    // Ambient color wash outside the structural panels
+    <div className="space-y-6 max-w-[1600px] mx-auto px-6 py-4 min-h-screen bg-linear-to-br from-amber-500/1 via-transparent to-blue-500/2">
       
       {/* SECTION: Page Title & Context Header */}
-      <section aria-label="Page Header" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-4">
+      <section aria-label="Page Header" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-4">
         <PageHeader
           title="Portfolio Hedging Matrix"
           subtitle="Greeks Risk Mitigation & AI Generated Hedging Strategies"
@@ -24,15 +25,19 @@ export default function HedgingPage() {
         <Button 
           onClick={() => setIsEngineOpen(!isEngineOpen)}
           variant={isEngineOpen ? "outline" : "default"}
-          className="sm:w-auto w-full font-medium shadow-sm transition-all"
+          className={`sm:w-auto w-full font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+            isEngineOpen 
+              ? 'border-amber-500/30 text-amber-600 bg-amber-500/5 hover:bg-amber-500/10' 
+              : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
+          }`}
         >
           {isEngineOpen ? (
             <>
-              <X className="mr-2 h-4 w-4" /> Close Strategy Engine
+              <X className="mr-2 h-3.5 w-3.5" /> Close Strategy Engine
             </>
           ) : (
             <>
-              <SlidersHorizontal className="mr-2 h-4 w-4" /> Open Strategy Executor
+              <SlidersHorizontal className="mr-2 h-3.5 w-3.5" /> Open Strategy Executor
             </>
           )}
         </Button>
@@ -42,29 +47,27 @@ export default function HedgingPage() {
       {isEngineOpen && (
         <section 
           aria-label="Hedging Execution Engine" 
-          className="bg-muted/30 p-6 rounded-xl border max-w-2xl animate-in fade-in slide-in-from-top-4 duration-200"
+          className="bg-amber-500/3 p-6 rounded-xl border border-amber-500/20 max-w-2xl animate-in fade-in slide-in-from-top-4 duration-200 shadow-2xs"
         >
-          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest mb-3">
+          <div className="text-[10px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-3 font-semibold">
             Pipeline // Option_Greeks_Simulation
           </div>
           <GenerateStrategyCard />
         </section>
       )}
 
-      {/* SECTION: Risk Sensitivities & Strategy Execution Playbooks */}
+      {/* SECTION: Harmonized Grid (Table & Playbook matching spatial footprint) */}
       <section 
         aria-label="Hedging and Risk Management Framework" 
-        className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch"
       >
-        {/* Quantitative Trade Parameters Matrix (Expanded layout real-estate) */}
-        <div className="xl:col-span-3 space-y-4">
-          <div className="p-1 rounded-lg border bg-card">
-            <GreeksTable />
-          </div>
+        {/* Quantitative Trade Parameters Matrix Container */}
+        <div className="h-full flex flex-col rounded-xl border border-border/50 bg-card/60 backdrop-blur-md shadow-2xs hover:border-blue-500/20 transition-all duration-300 overflow-hidden">
+          <GreeksTable />
         </div>
 
-        {/* AI Mitigation Strategy & Rebalancing Playbook */}
-        <div className="xl:col-span-1 w-full xl:sticky xl:top-6">
+        {/* AI Mitigation Strategy & Rebalancing Playbook Container */}
+        <div className="h-full flex flex-col rounded-xl border border-border/50 bg-card/60 backdrop-blur-md shadow-2xs hover:border-amber-500/20 transition-all duration-300 overflow-hidden">
           <PlaybookCard />
         </div>
       </section>

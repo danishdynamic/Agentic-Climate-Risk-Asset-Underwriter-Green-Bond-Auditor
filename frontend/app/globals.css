@@ -5,77 +5,107 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.147 0.004 49.3);
+    /* --- INSTITUTIONAL LIGHT TERMINAL --- */
+    /* Canvas: Off-white steel tint to lower contrast glare */
+    --background: oklch(0.985 0.004 240);
+    --foreground: oklch(0.25 0.015 240);
+    
+    /* Surface Modules: Pure structure cards with crisp definitions */
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.147 0.004 49.3);
+    --card-foreground: oklch(0.25 0.015 240);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.147 0.004 49.3);
-    --primary: oklch(0.214 0.009 43.1);
-    --primary-foreground: oklch(0.986 0.002 67.8);
-    --secondary: oklch(0.96 0.002 17.2);
-    --secondary-foreground: oklch(0.214 0.009 43.1);
-    --muted: oklch(0.96 0.002 17.2);
-    --muted-foreground: oklch(0.547 0.021 43.1);
-    --accent: oklch(0.96 0.002 17.2);
-    --accent-foreground: oklch(0.214 0.009 43.1);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0.005 34.3);
-    --input: oklch(0.922 0.005 34.3);
-    --ring: oklch(0.714 0.014 41.2);
-    --chart-1: oklch(0.868 0.007 39.5);
-    --chart-2: oklch(0.547 0.021 43.1);
-    --chart-3: oklch(0.438 0.017 39.3);
-    --chart-4: oklch(0.367 0.016 35.7);
-    --chart-5: oklch(0.268 0.011 36.5);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.986 0.002 67.8);
-    --sidebar-foreground: oklch(0.147 0.004 49.3);
-    --sidebar-primary: oklch(0.214 0.009 43.1);
-    --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
-    --sidebar-accent: oklch(0.96 0.002 17.2);
-    --sidebar-accent-foreground: oklch(0.214 0.009 43.1);
-    --sidebar-border: oklch(0.922 0.005 34.3);
-    --sidebar-ring: oklch(0.714 0.014 41.2);
+    --popover-foreground: oklch(0.25 0.015 240);
+    
+    /* Structural Rules & System Lines: Ultra-thin, low-weight divisions */
+    --border: oklch(0.92 0.008 240);
+    --input: oklch(0.92 0.008 240);
+    
+    /* Component Anchors: Deep corporate navy/slate */
+    --primary: oklch(0.28 0.02 240);
+    --primary-foreground: oklch(0.985 0.004 240);
+    
+    /* Dense Low-Priority Tokens */
+    --muted: oklch(0.95 0.006 240);
+    --muted-foreground: oklch(0.52 0.015 240);
+    --accent: oklch(0.95 0.006 240);
+    --accent-foreground: oklch(0.28 0.02 240);
+    
+    /* Institutional Alert Framework */
+    --destructive: oklch(0.55 0.18 25);
+    --ring: oklch(0.45 0.02 240 / 30%);
+    
+    /* High-Density Navigation Workspace Boundaries */
+    --sidebar: oklch(0.975 0.005 240);
+    --sidebar-foreground: oklch(0.30 0.015 240);
+    --sidebar-primary: oklch(0.28 0.02 240);
+    --sidebar-primary-foreground: oklch(0.985 0.004 240);
+    --sidebar-accent: oklch(0.94 0.008 240);
+    --sidebar-accent-foreground: oklch(0.28 0.02 240);
+    --sidebar-border: oklch(0.91 0.008 240);
+    --sidebar-ring: oklch(0.28 0.02 240 / 20%);
+    
+    /* Core Macro-Grid Chart Mappings (Optimized Financial Palette) */
+    --chart-1: oklch(0.60 0.16 150);  /* Alpha Teal/Emerald */
+    --chart-2: oklch(0.55 0.18 250);  /* Deep Analytical Indigo */
+    --chart-3: oklch(0.70 0.15 75);   /* Risk Amber */
+    --chart-4: oklch(0.45 0.12 210);  /* Slate Blue Muted */
+    --chart-5: oklch(0.35 0.03 240);  /* Structural Dark Neutral */
+    
+    /* Sharp Terminal Radius Configuration */
+    --radius: 0.375rem; 
 }
 
 .dark {
-    --background: oklch(0.147 0.004 49.3);
-    --foreground: oklch(0.986 0.002 67.8);
-    --card: oklch(0.214 0.009 43.1);
-    --card-foreground: oklch(0.986 0.002 67.8);
-    --popover: oklch(0.214 0.009 43.1);
-    --popover-foreground: oklch(0.986 0.002 67.8);
-    --primary: oklch(0.922 0.005 34.3);
-    --primary-foreground: oklch(0.214 0.009 43.1);
-    --secondary: oklch(0.268 0.011 36.5);
-    --secondary-foreground: oklch(0.986 0.002 67.8);
-    --muted: oklch(0.268 0.011 36.5);
-    --muted-foreground: oklch(0.714 0.014 41.2);
-    --accent: oklch(0.268 0.011 36.5);
-    --accent-foreground: oklch(0.986 0.002 67.8);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.547 0.021 43.1);
-    --chart-1: oklch(0.868 0.007 39.5);
-    --chart-2: oklch(0.547 0.021 43.1);
-    --chart-3: oklch(0.438 0.017 39.3);
-    --chart-4: oklch(0.367 0.016 35.7);
-    --chart-5: oklch(0.268 0.011 36.5);
-    --sidebar: oklch(0.214 0.009 43.1);
-    --sidebar-foreground: oklch(0.986 0.002 67.8);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
-    --sidebar-accent: oklch(0.268 0.011 36.5);
-    --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.547 0.021 43.1);
+    /* --- INSTITUTIONAL DARK TERMINAL --- */
+    /* Deep charcoal navy space minimizing luminous emissions */
+    --background: oklch(0.14 0.008 240);
+    --foreground: oklch(0.93 0.006 240);
+    
+    /* Surface Modules: Subtle contrast shift above background canvas */
+    --card: oklch(0.17 0.01 240);
+    --card-foreground: oklch(0.93 0.006 240);
+    --popover: oklch(0.17 0.01 240);
+    --popover-foreground: oklch(0.93 0.006 240);
+    
+    /* High-Density Separation Matrix Borders */
+    --border: oklch(0.23 0.012 240);
+    --input: oklch(0.23 0.012 240);
+    
+    /* Active High-Light Primary Core Elements */
+    --primary: oklch(0.93 0.006 240);
+    --primary-foreground: oklch(0.14 0.008 240);
+    
+    /* Secondary and Passive Text Segments */
+    --muted: oklch(0.20 0.01 240);
+    --muted-foreground: oklch(0.65 0.01 240);
+    --accent: oklch(0.20 0.01 240);
+    --accent-foreground: oklch(0.93 0.006 240);
+    
+    --destructive: oklch(0.62 0.20 25);
+    --ring: oklch(0.93 0.006 240 / 20%);
+    
+    /* Navigation Panel Dark System State mappings */
+    --sidebar: oklch(0.15 0.009 240);
+    --sidebar-foreground: oklch(0.85 0.008 240);
+    --sidebar-primary: oklch(0.93 0.006 240);
+    --sidebar-primary-foreground: oklch(0.14 0.008 240);
+    --sidebar-accent: oklch(0.20 0.01 240);
+    --sidebar-accent-foreground: oklch(0.93 0.006 240);
+    --sidebar-border: oklch(0.22 0.012 240);
+    --sidebar-ring: oklch(0.93 0.006 240 / 15%);
+
+    --chart-1: oklch(0.75 0.14 150);
+    --chart-2: oklch(0.68 0.16 250);
+    --chart-3: oklch(0.82 0.13 75);
+    --chart-4: oklch(0.60 0.10 210);
+    --chart-5: oklch(0.80 0.01 240);
 }
 
 @theme inline {
     --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono); /* Force mapping for technical numbers */
     --font-heading: var(--font-heading);
+    
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -84,11 +114,13 @@
     --color-sidebar-primary: var(--sidebar-primary);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar: var(--sidebar);
+    
     --color-chart-5: var(--chart-5);
     --color-chart-4: var(--chart-4);
     --color-chart-3: var(--chart-3);
     --color-chart-2: var(--chart-2);
     --color-chart-1: var(--chart-1);
+    
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
@@ -107,29 +139,28 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    
+    --radius-sm: calc(var(--radius) * 0.75);
+    --radius-md: var(--radius);
+    --radius-lg: calc(var(--radius) * 1.5);
+    --radius-xl: calc(var(--radius) * 2);
 }
 
 @media print {
-  .print-header { display: block; }
-  /* Ensure the background colors show in PDF */
-  .bg-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .print-header { display: block; }
+    .bg-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/40 tracking-tight;
     }
-  body {
-    @apply bg-background text-foreground;
+    body {
+        @apply bg-background text-foreground antialiased;
+        text-rendering: optimizeLegibility; 
+        font-feature-settings: "cv02", "cv03", "cv04", "tnum" 1;
     }
-  html {
-    @apply font-sans;
+    html {
+        @apply font-sans subpixel-antialiased;
     }
 }
